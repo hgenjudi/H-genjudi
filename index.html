@@ -532,19 +532,33 @@ textarea.script{min-height:60px;font-family:"SF Mono","Fira Code",monospace;font
 
 /* ─── Mobile ─── */
 @media (max-width: 768px){
-  .sidebar{position:fixed;left:0;top:0;z-index:50;height:100vh;box-shadow:0 0 30px rgba(0,0,0,.15)}
-  .sidebar:not(.open){transform:translateX(-100%)}
-  .sidebar.open{transform:none}
-  .sidebar-mask.show{display:block}
-  .hamburger{display:inline-flex}
-  .main{padding:16px}
+  .sidebar{
+    position:sticky;transform:none;box-shadow:none;
+    width:56px;padding:12px 6px;min-height:100vh;
+  }
+  .sidebar .brand{padding:6px;margin-bottom:12px;justify-content:center}
+  .sidebar .brand-info{display:none}
+  .sidebar .brand-logo{width:32px;height:32px;font-size:14px;border-radius:10px}
+  .sidebar-date{display:none}
+  .nav-group-title{display:none}
+  .nav-item{padding:10px 6px;justify-content:center;gap:0;border-radius:10px}
+  .nav-label{display:none}
+  .nav-dot{display:none}
+  .nav-icon{font-size:20px;width:auto}
+  .nav-item .badge{display:none}
+  .sidebar-mask{display:none!important}
+  .hamburger{display:none!important}
+  .main{padding:14px 12px}
   .page-title{font-size:20px}
-  .stat-value{font-size:24px}
+  .stat-value{font-size:22px}
   .grid-4{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
-  .grid-5{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
-  .brand-logo{width:36px;height:36px;font-size:16px}
-  .nav-item{padding:10px 12px}
-  .card{padding:16px}
+  .grid-5{grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}
+  .brand-logo{width:32px;height:32px;font-size:14px}
+  .card{padding:14px}
+  .quick-actions{flex-direction:column}
+  .qa-item{min-width:100%}
+  .overview-header{flex-direction:column;align-items:flex-start;gap:8px}
+  .ov-deco{font-size:28px}
 }
 </style>
 </head>
