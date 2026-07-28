@@ -734,13 +734,28 @@ function loadState(){
     const raw = localStorage.getItem(STORE_KEY);
     if(raw){
       const parsed = JSON.parse(raw);
+      // 模块去重+排序
       const seen=new Set();
       parsed.modules=parsed.modules.filter(m=>{if(seen.has(m.id))return false;seen.add(m.id);return true});
       const ids=new Set(parsed.modules.map(m=>m.id));
       DEFAULT_MODULES.forEach(dm=>{if(!ids.has(dm.id))parsed.modules.push(dm)});
       const orderMap={};DEFAULT_MODULES.forEach((m,i)=>orderMap[m.id]=i);
       parsed.modules.sort((a,b)=>(orderMap[a.id]??999)-(orderMap[b.id]??999));
+      // 数据字段兼容——确保所有新字段都存在
+      if(!parsed.data)parsed.data={};
+      if(!parsed.data.todo)parsed.data.todo=[];
+      if(!parsed.data.english||Array.isArray(parsed.data.english))parsed.data.english={};
+      if(!parsed.data.diet||!parsed.data.diet.meals)parsed.data.diet={meals:{},targetCal:1500};
       if(!parsed.data.videoedit)parsed.data.videoedit={materials:[],skills:[],templates:[],analysis:[]};
+      if(!parsed.data.fitness)parsed.data.fitness={};
+      if(!parsed.data.finance)parsed.data.finance=[];
+      if(!parsed.data.countdown)parsed.data.countdown=[];
+      if(!parsed.data.reading)parsed.data.reading=[];
+      if(!parsed.data.ideas)parsed.data.ideas=[];
+      if(!parsed.data.scripts)parsed.data.scripts=[];
+      if(!parsed.data.reviews)parsed.data.reviews=[];
+      if(!parsed.data.hotspots)parsed.data.hotspots=[];
+      if(!parsed.data.football)parsed.data.football=[];
       if(!parsed._veTab)parsed._veTab='analysis';
       return parsed;
     }
@@ -750,7 +765,8 @@ function loadState(){
     data: {
       todo:[], english:{}, finance:[], countdown:[], reading:[], ideas:[],
       scripts:[], reviews:[], hotspots:[], football:[], fitness:{},
-      videoedit:{materials:[],skills:[],templates:[],analysis:[]}
+      videoedit:{materials:[],skills:[],templates:[],analysis:[]},
+      diet:{meals:{},targetCal:1500}
     },
     _veTab: 'analysis'
   };
