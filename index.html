@@ -1104,41 +1104,39 @@ function renderHealth(){
         const ftTodayIdx=ftNow.getMonth()+1===ftM&&ftNow.getFullYear()===ftY?ftNow.getDate():0;
         const ftDoneDays=[];
         for(let d=1;d<=ftDim;d++){
-          const kk=`${tm}-${String(d).padStart(2,'0')}`;
+          const kk=tm+'-'+String(d).padStart(2,'0');
           if(state.data.fitness[kk])ftDoneDays.push(d);
         }
         const ftDoneCount=ftDoneDays.length;
         let ftStreak=0;
         for(let d=ftTodayIdx||ftDim;d>=1;d--){
-          const kk=`${tm}-${String(d).padStart(2,'0')}`;
+          const kk=tm+'-'+String(d).padStart(2,'0');
           if(state.data.fitness[kk])ftStreak++;else break;
         }
-        return `
-        <div class="grid grid-4" style="margin-bottom:14px">
-          <div class="stat"><div class="stat-label">本月健身</div><div class="stat-value">${ftDoneCount}/${ftDim}<span style="font-size:14px;opacity:.5">天</span></div></div>
-          <div class="stat"><div class="stat-label">连续打卡</div><div class="stat-value">${ftStreak}<span style="font-size:14px;opacity:.5">天</span></div></div>
-          <div class="stat"><div class="stat-label">今日状态</div><div class="stat-value">${ftToday?'💪 已完成':'😴 未打卡'}</div></div>
-          <div class="stat"><div class="stat-label">今日消耗</div><div class="stat-value" style="color:#ef4444">${ftToday?'~300':'-'}<span style="font-size:14px;opacity:.5">千卡</span></div></div>
-        </div>
-        <div class="toolbar">
-          <button class="btn btn-sm" onclick="fitnessToggleToday();setTimeout(()=>renderHealth(),200)">${ftToday?'取消今日打卡':'🏃 今日打卡'}</button>
-          <span style="font-size:12px;color:var(--text-mute)">${tm} 打卡日历</span>
-          <div style="flex:1"></div>
-          <button class="btn btn-ghost btn-sm" onclick="exportFitness()">导出</button>
-        </div>
-        <div class="card">
-          <div style="display:flex;flex-wrap:wrap;gap:4px">
-            ${Array.from({length:ftDim},(_,i)=>i+1).map(d=>{
-              const kk=`${tm}-${String(d).padStart(2,'0')}`;
-              const done=state.data.fitness[kk];
-              const isToday=d===ftTodayIdx;
-              return \`<div class="fitness-day \${done?'done':''}" onclick="fitnessToggle('\${kk}');setTimeout(()=>renderHealth(),200)" title="\${kk}\${done?' ✓':''}">
-                <span style="font-size:10px;color:\${isToday?'var(--pink-500)':'var(--text-mute)'};font-weight:\${isToday?'700':'400'}">\${['日','一','二','三','四','五','六'][new Date(ftY,ftM-1,d).getDay()]}</span>
-                <span class="d">\${d}</span>
-              </div>\`;
-            }).join('')}
-          </div>
-        </div>`;
+        // 生成日历格子HTML（用字符串拼接避免模板嵌套问题）
+        var calHtml='';
+        for(var d=1;d<=ftDim;d++){
+          var kk=tm+'-'+String(d).padStart(2,'0');
+          var done=state.data.fitness[kk];
+          var isToday=d===ftTodayIdx;
+          var dow=['日','一','二','三','四','五','六'][new Date(ftY,ftM-1,d).getDay()];
+          calHtml+='<div class=\"fitness-day '+(done?'done':'')+'\" onclick=\"fitnessToggle(\\''+kk+'\\');setTimeout(function(){renderHealth()},200)\" title=\"'+kk+(done?' ✓':'')+'\">';
+          calHtml+='<span style=\"font-size:10px;color:'+(isToday?'var(--pink-500)':'var(--text-mute)')+';font-weight:'+(isToday?'700':'400')+'\">'+dow+'</span>';
+          calHtml+='<span class=\"d\">'+d+'</span></div>';
+        }
+        return '<div class=\"grid grid-4\" style=\"margin-bottom:14px\">'+
+          '<div class=\"stat\"><div class=\"stat-label\">本月健身</div><div class=\"stat-value\">'+ftDoneCount+'/'+ftDim+'<span style=\"font-size:14px;opacity:.5\">天</span></div></div>'+
+          '<div class=\"stat\"><div class=\"stat-label\">连续打卡</div><div class=\"stat-value\">'+ftStreak+'<span style=\"font-size:14px;opacity:.5\">天</span></div></div>'+
+          '<div class=\"stat\"><div class=\"stat-label\">今日状态</div><div class=\"stat-value\">'+(ftToday?'💪 已完成':'😴 未打卡')+'</div></div>'+
+          '<div class=\"stat\"><div class=\"stat-label\">今日消耗</div><div class=\"stat-value\" style=\"color:#ef4444\">'+(ftToday?'~300':'-')+'<span style=\"font-size:14px;opacity:.5\">千卡</span></div></div>'+
+          '</div>'+
+          '<div class=\"toolbar\">'+
+          '<button class=\"btn btn-sm\" onclick=\"fitnessToggleToday();setTimeout(function(){renderHealth()},200)\">'+(ftToday?'取消今日打卡':'🏃 今日打卡')+'</button>'+
+          '<span style=\"font-size:12px;color:var(--text-mute)\">'+tm+' 打卡日历</span>'+
+          '<div style=\"flex:1\"></div>'+
+          '<button class=\"btn btn-ghost btn-sm\" onclick=\"exportFitness()\">导出</button>'+
+          '</div>'+
+          '<div class=\"card\"><div style=\"display:flex;flex-wrap:wrap;gap:4px\">'+calHtml+'</div></div>';
       })()}
 
       <!-- 欧阳春晓跟练视频 -->
