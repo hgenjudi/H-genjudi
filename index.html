@@ -1600,7 +1600,7 @@ function renderFootball(){
     <!-- 实时赛事（中国体育彩票） -->
     <div class="section-title">📡 实时赛事 <span style="font-weight:400;font-size:12px;color:var(--text-mute);margin-left:8px">数据来源：中国体育彩票竞彩网</span></div>
     <div class="toolbar">
-      <button class="btn btn-sm" onclick="fetchLiveMatches()">🔄 手动刷新</button>
+      <button class="btn btn-sm" onclick="fetchLiveMatches(true)">🔄 手动刷新</button>
       <button class="btn btn-outline btn-sm" onclick="addMatchFromLive()">+ 添加选中的赛事到我的竞猜</button>
       <span style="font-size:11px;color:var(--text-mute);margin-left:8px" id="fb-live-status"></span>
     </div>
@@ -1738,68 +1738,122 @@ function deleteFB(id){
   saveState();renderFootball();renderOverview();toast('已删除');
 }
 
-/* ─── 实时赛事拉取（Football Live API · FotMob数据 · 500+联赛） ─── */
+/* ─── 实时赛事拉取（中国体育彩票竞彩网官方API） ─── */
 let _liveMatches = [];
 let _liveSelected = new Set();
+const _SPORTTERY_CACHE = new Map(); // 按日期缓存原始数据
 
-// 显示所有联赛（不再过滤），体彩竞彩覆盖范围更广
-const SKIP_LEAGUES = new Set([]);
-
-async function fetchLiveMatches(){
+async function fetchLiveMatches(forceRefresh){
   const statusEl = document.getElementById('fb-live-status');
   const matchesEl = document.getElementById('fb-live-matches');
   if(!statusEl||!matchesEl)return;
   statusEl.textContent = '加载中...';
-  matchesEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-mute)">⏳ 正在获取比赛数据...</div>';
+  matchesEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-mute)">⏳ 正在获取体彩竞彩数据...</div>';
 
   try{
     _liveMatches = [];
-    const dateStr = today();
-    const resp = await fetch(`https://football-live-api.vercel.app/api/fotmob/matches/date/${dateStr}`);
+    const dateKey = today();
+
+    // 检查缓存（非强制刷新时，5分钟内复用）
+    if(!forceRefresh){
+      const cached = _SPORTTERY_CACHE.get(dateKey);
+      if(cached && (Date.now()-cached.ts)<300000){
+        _liveMatches = cached.matches;
+        renderLiveMatches();
+        statusEl.textContent = `✅ ${_liveMatches.length}场比赛 · 体彩竞彩 · 缓存`;
+        return;
+      }
+    }
+
+    // 调用体彩官方API：getMatchCalculatorV1
+    const apiUrl = 'https://webapi.sporttery.cn/gateway/jc/football/getMatchCalculatorV1.qry?poolCode=hhad,had,crs,ttg,hafu&channel=c';
+    const resp = await fetch(apiUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
+        'Referer': 'https://m.sporttery.cn/',
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'zh-CN,zh;q=0.9'
+      }
+    });
+
     if(!resp.ok)throw new Error('HTTP '+resp.status);
     const json = await resp.json();
-    if(!json.success||!json.data)throw new Error('API返回异常');
+    if(!json.success || json.errorCode!=='0')throw new Error(json.errorMessage||'API返回异常');
 
-    const leagues = json.data.leagues||[];
-    leagues.forEach(l=>{
-      const name = l.name||'';
-      (l.matches||[]).forEach(m=>{
-        const hs=m.home&&m.home.score!=null?m.home.score:null;
-        const as=m.away&&m.away.score!=null?m.away.score:null;
-        let result=null;
-        if(hs!=null&&as!=null){
-          if(hs>as)result='win';
-          else if(hs===as)result='draw';
-          else result='lose';
-        }
-        const st=m.status||{};
+    const v = json.value;
+    if(!v||!Array.isArray(v.matchInfoList))throw new Error('无比赛数据');
+
+    const updateTime = v.lastUpdateTime||'';
+
+    // 解析每场比赛
+    v.matchInfoList.forEach(mi=>{
+      (mi.subMatchList||[]).forEach(sub=>{
+        const leagueName = sub.leagueAllName||sub.leagueName||'';
+        const leagueAbbr = sub.leagueNameAbbr||'';
+        const home = sub.homeTeamAllName||sub.homeTeamAbbName||'';
+        const away = sub.awayTeamAllName||sub.awayTeamAbbName||'';
+        const matchNum = sub.matchNumStr||'';
+        const matchDate = sub.matchDate||sub.businessDate||'';
+        const matchTime = sub.matchTime||'';
+        const sellStatus = sub.sellStatus||'';
+        const had = sub.had||{};
+        const hhad = sub.hhad||{};
+
+        // 销售状态码: 0-未开售 1-仅过关 2-单关和过关 3-停售
+        const sellMap = {'0':'未开售','1':'仅过关','2':'单关+过关','3':'停售'};
+        const sellText = sellMap[sellStatus]||'未知';
+
+        // 构建比赛时间
+        const fullTime = matchDate+' '+(matchTime||'00:00:00');
+
         _liveMatches.push({
-          id:m.id,
-          date:dateStr,
-          time:st.utcTime?new Date(st.utcTime).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',hour12:false}):'',
-          league:name,
-          home:m.home?m.home.name||'':'',
-          away:m.away?m.away.name||'':'',
-          homeScore:hs,
-          awayScore:as,
-          result,
-          status:st.finished?'完':st.started?'进行中':'待开',
+          id: sub.matchId||sub.subMatchId||0,
+          matchNum,
+          date: matchDate,
+          time: matchTime?matchTime.slice(0,5):'',
+          fullTime,
+          league: leagueName,
+          leagueAbbr,
+          home,
+          away,
+          homeScore: null,
+          awayScore: null,
+          result: null,
+          status: '待开',
+          sellStatus,
+          sellText,
+          // 胜平负赔率
+          spfWin: had.h||'',
+          spfDraw: had.d||'',
+          spfLose: had.a||'',
+          // 让球胜平负
+          rqGoalLine: hhad.goalLine||'',
+          rqWin: hhad.h||'',
+          rqDraw: hhad.d||'',
+          rqLose: hhad.a||'',
         });
       });
     });
-    _liveMatches.sort((a,b)=>a.time.localeCompare(b.time)||a.league.localeCompare(b.league));
+
+    // 按比赛编号排序
+    _liveMatches.sort((a,b)=>a.matchNum.localeCompare(b.matchNum));
+
+    // 缓存
+    _SPORTTERY_CACHE.set(dateKey, {matches:_liveMatches, ts:Date.now()});
+
     renderLiveMatches();
-    const live=_liveMatches.filter(m=>m.status==='进行中').length;
-    const done=_liveMatches.filter(m=>m.status==='完').length;
-    statusEl.textContent = `✅ ${_liveMatches.length}场 (${live}进行中 ${done}已完) · FotMob`;
+    const leagueCount = new Set(_liveMatches.map(m=>m.league)).size;
+    statusEl.textContent = `✅ ${_liveMatches.length}场比赛 · ${leagueCount}个联赛 · 体彩竞彩 · ${updateTime.slice(-8)||''}`;
   }catch(e){
-    console.warn('Football API failed:',e);
+    console.warn('体彩API失败:',e);
     statusEl.textContent = '❌ 获取失败，请点击手动刷新';
-    matchesEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-mute)">获取比赛数据失败<br><span style="font-size:12px;color:var(--pink-300)">请检查网络后点击「手动刷新」重试</span></div>';
+    matchesEl.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text-mute)">
+      获取体彩竞彩数据失败<br>
+      <span style="font-size:12px;color:var(--pink-300)">${esc(e.message||'网络错误')}</span><br>
+      <button class="btn btn-sm" style="margin-top:8px" onclick="fetchLiveMatches(true)">🔄 强制刷新</button>
+    </div>`;
   }
 }
-
-async function fetchBackupMatches(){}
 
 function renderLiveMatches(){
   const el = document.getElementById('fb-live-matches');
@@ -1810,30 +1864,67 @@ function renderLiveMatches(){
     return;
   }
 
-  el.innerHTML = `
-    <table class="fb-table">
-      <thead><tr>
-        <th style="width:30px"><input type="checkbox" onchange="toggleAllLive(this)" title="全选"></th>
-        <th>时间</th><th>联赛</th><th>主队</th><th>比分</th><th>客队</th><th>状态</th>
-        <th>快速竞猜</th>
-      </tr></thead>
-      <tbody>${_liveMatches.map((m,i)=>`
-        <tr>
-          <td><input type="checkbox" data-idx="${i}" onchange="toggleLiveMatch(this)" ${_liveSelected.has(i)?'checked':''}></td>
-          <td style="font-size:12px;color:var(--text-mute)">${m.time||(m.date||'').slice(-5)}</td>
-          <td><span class="tag tag-gray">${esc(m.league||'其他')}</span></td>
-          <td>${esc(m.home)}</td>
-          <td>${m.homeScore!=null?`<strong>${m.homeScore}-${m.awayScore}</strong>`:'vs'}</td>
-          <td>${esc(m.away)}</td>
-          <td>${m.status?`<span class="tag ${m.status==='完'?'tag-success':m.status==='进行中'?'tag-warn':'tag-info'}">${esc(m.status)}</span>`:`<span class="tag tag-gray">待开</span>`}</td>
-          <td>
-            <button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:11px;margin:1px" onclick="quickGuess('${i}','win')">胜</button>
-            <button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:11px;margin:1px" onclick="quickGuess('${i}','draw')">平</button>
-            <button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:11px;margin:1px" onclick="quickGuess('${i}','lose')">负</button>
-          </td>
-        </tr>`).join('')}</tbody>
-    </table>
-  `;
+  // 按联赛分组
+  const leagueGroups = {};
+  _liveMatches.forEach((m,i)=>{
+    const key = m.league||'其他';
+    if(!leagueGroups[key])leagueGroups[key]=[];
+    leagueGroups[key].push({...m,idx:i});
+  });
+
+  let html = '';
+  for(const [league, matches] of Object.entries(leagueGroups)){
+    html += `<div style="padding:6px 12px;background:var(--pink-50);font-size:12px;font-weight:600;color:var(--pink-600);border-bottom:1px solid var(--pink-100)">${esc(league)} <span style="font-weight:400;color:var(--text-mute)">${matches.length}场</span></div>`;
+    html += `<table class="fb-table" style="margin-bottom:0"><thead><tr>
+      <th style="width:30px"><input type="checkbox" onchange="toggleGroupLive(this)" title="全选本组"></th>
+      <th>编号</th><th>时间</th><th>主队</th><th>vs</th><th>客队</th>
+      <th>胜平负</th><th>让球</th><th>销售</th>
+      <th>竞猜</th>
+    </tr></thead><tbody>`;
+    html += matches.map(m=>{
+      const rqSign = (m.rqGoalLine||'').startsWith('-')?'':'+';
+      const rqDisplay = m.rqGoalLine?`${rqSign}${m.rqGoalLine}`:'-';
+      return `<tr>
+        <td><input type="checkbox" data-idx="${m.idx}" onchange="toggleLiveMatch(this)" ${_liveSelected.has(m.idx)?'checked':''}></td>
+        <td style="font-weight:600;color:var(--pink-500)">${m.matchNum||'-'}</td>
+        <td style="font-size:12px;color:var(--text-mute)">${m.time||'-'}</td>
+        <td style="font-weight:500">${esc(m.home)}</td>
+        <td style="color:var(--text-mute)">vs</td>
+        <td style="font-weight:500">${esc(m.away)}</td>
+        <td style="font-size:12px">
+          <span style="color:#10b981;font-weight:600">${m.spfWin||'-'}</span>
+          <span style="color:var(--text-mute)">/</span>
+          <span style="color:#f59e0b;font-weight:600">${m.spfDraw||'-'}</span>
+          <span style="color:var(--text-mute)">/</span>
+          <span style="color:#ef4444;font-weight:600">${m.spfLose||'-'}</span>
+        </td>
+        <td style="font-size:12px">
+          <span class="tag tag-gray">${rqDisplay}</span>
+          ${m.rqWin?`<span style="color:#10b981">${m.rqWin}</span>/<span style="color:#f59e0b">${m.rqDraw}</span>/<span style="color:#ef4444">${m.rqLose}</span>`:'-未开'}
+        </td>
+        <td><span class="tag ${m.sellStatus==='2'?'tag-success':m.sellStatus==='1'?'tag-warn':'tag-gray'}" style="font-size:10px">${m.sellText}</span></td>
+        <td>
+          <button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:11px;margin:1px" onclick="quickGuess('${m.idx}','win')">胜</button>
+          <button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:11px;margin:1px" onclick="quickGuess('${m.idx}','draw')">平</button>
+          <button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:11px;margin:1px" onclick="quickGuess('${m.idx}','lose')">负</button>
+        </td>
+      </tr>`;
+    }).join('');
+    html += '</tbody></table>';
+  }
+
+  el.innerHTML = html;
+}
+
+function toggleGroupLive(cb){
+  const table = cb.closest('table');
+  if(!table)return;
+  const checkboxes = table.querySelectorAll('tbody input[type="checkbox"]');
+  checkboxes.forEach(c=>{
+    c.checked = cb.checked;
+    const idx = parseInt(c.dataset.idx);
+    if(cb.checked)_liveSelected.add(idx);else _liveSelected.delete(idx);
+  });
 }
 
 function toggleLiveMatch(cb){
