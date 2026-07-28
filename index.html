@@ -1538,6 +1538,53 @@ function renderFitness(){
       </div>
       <div style="font-size:12px;color:var(--text-mute)">点击日历格子标记/取消打卡。建议每次记录具体项目和时长。</div>
     </div>
+
+    <!-- 欧阳春晓跟练视频 -->
+    <div class="card" style="margin-top:14px">
+      <div class="card-title">🎀 欧阳春晓 · 跟练视频</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:8px">
+        ${[
+          {
+            title:'直角肩养成',
+            desc:'改善圆肩驼背，练出漂亮直角肩',
+            url:'https://www.bilibili.com/video/BV1ZV411k7Nh',
+            cover:'https://i0.hdslb.com/bfs/archive/5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c.jpg',
+            color:'#f472b6',
+            icon:'💪'
+          },
+          {
+            title:'沙漏腰训练',
+            desc:'收紧腰腹，打造沙漏型曲线',
+            url:'https://www.bilibili.com/video/BV1iL4y1K7JG',
+            cover:'',
+            color:'#fb7185',
+            icon:'⏳'
+          },
+          {
+            title:'天鹅臂训练',
+            desc:'纤细手臂，练出优雅天鹅臂',
+            url:'https://www.bilibili.com/video/BV1sW411j7Qh',
+            cover:'',
+            color:'#e879f9',
+            icon:'🦢'
+          }
+        ].map(v=>`
+          <a href="${v.url}" target="_blank" style="text-decoration:none;display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;background:linear-gradient(135deg,${v.color}10,${v.color}05);border:1px solid ${v.color}30;transition:all .2s"
+             onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 16px ${v.color}20'"
+             onmouseout="this.style.transform='';this.style.boxShadow=''">
+            <div style="width:44px;height:44px;border-radius:12px;background:${v.color}20;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${v.icon}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:600;font-size:14px;color:var(--text)">${v.title}</div>
+              <div style="font-size:12px;color:var(--text-mute);margin-top:2px">${v.desc}</div>
+            </div>
+            <div style="width:32px;height:32px;border-radius:50%;background:${v.color};display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;flex-shrink:0">▶</div>
+          </a>
+        `).join('')}
+      </div>
+      <div style="font-size:11px;color:var(--text-mute);margin-top:10px;text-align:center">
+        💡 点击卡片跳转 B站观看完整跟练视频。每天坚持15分钟，效果看得见！
+      </div>
+    </div>
   `;
 }
 function fitnessToggle(key){
