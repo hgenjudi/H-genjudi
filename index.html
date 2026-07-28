@@ -1600,13 +1600,13 @@ function renderFootball(){
     <!-- 实时赛事（中国体育彩票） -->
     <div class="section-title">📡 实时赛事 <span style="font-weight:400;font-size:12px;color:var(--text-mute);margin-left:8px">数据来源：中国体育彩票竞彩网</span></div>
     <div class="toolbar">
-      <button class="btn btn-sm" onclick="fetchLiveMatches()">🔄 刷新赛事</button>
+      <button class="btn btn-sm" onclick="fetchLiveMatches()">🔄 手动刷新</button>
       <button class="btn btn-outline btn-sm" onclick="addMatchFromLive()">+ 添加选中的赛事到我的竞猜</button>
       <span style="font-size:11px;color:var(--text-mute);margin-left:8px" id="fb-live-status"></span>
     </div>
     <div class="card" style="margin-bottom:12px;max-height:500px;overflow-y:auto">
       <div id="fb-live-matches" style="font-size:13px;color:var(--text-mute);text-align:center;padding:20px">
-        点击「刷新赛事」获取最新比赛数据
+        ⏳ 正在自动获取比赛数据...
       </div>
     </div>
 
@@ -1666,6 +1666,8 @@ function renderFootball(){
       </table>`:`<div class="empty">还没有竞猜记录，点击「手动新增」或从上方赛事列表添加</div>`}
     </div>
   `;
+  // 自动拉取赛事数据
+  setTimeout(()=>fetchLiveMatches(),200);
 }
 function setFBLeague(l){state._fbLeague=l;renderFootball()}
 function openFBAdd(id){
