@@ -735,9 +735,12 @@ function loadState(){
     const raw = localStorage.getItem(STORE_KEY);
     if(raw){
       const parsed = JSON.parse(raw);
-      const ids = new Set(parsed.modules.map(m=>m.id));
+      const seen=new Set();
+      parsed.modules=parsed.modules.filter(m=>{if(seen.has(m.id))return false;seen.add(m.id);return true});
+      const ids=new Set(parsed.modules.map(m=>m.id));
       DEFAULT_MODULES.forEach(dm=>{if(!ids.has(dm.id))parsed.modules.push(dm)});
-      // 兼容旧数据
+      const orderMap={};DEFAULT_MODULES.forEach((m,i)=>orderMap[m.id]=i);
+      parsed.modules.sort((a,b)=>(orderMap[a.id]??999)-(orderMap[b.id]??999));
       if(!parsed.data.videoedit)parsed.data.videoedit={materials:[],skills:[],templates:[],analysis:[]};
       if(!parsed._veTab)parsed._veTab='analysis';
       return parsed;
