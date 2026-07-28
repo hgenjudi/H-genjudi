@@ -261,6 +261,45 @@ a{color:var(--primary);text-decoration:none}
 }
 .stat-label{font-size:12px;color:var(--text-mute);position:relative;z-index:1}
 .stat-sub{font-size:11px;color:var(--text-soft);position:relative;z-index:1}
+.stat-icon-wrap{font-size:20px;margin-bottom:2px;position:relative;z-index:1}
+.stat-todo{border-left:3px solid var(--pink-400)}
+.stat-money{border-left:3px solid #10b981}
+.stat-fitness{border-left:3px solid #3b82f6}
+.stat-football{border-left:3px solid #f59e0b}
+.stat-create{border-left:3px solid #8b5cf6}
+
+/* ─── Overview Header ─── */
+.overview-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:20px 24px;margin-bottom:20px;
+  background:linear-gradient(135deg,#fdf2f8,#fff,#fce7f3);
+  border-radius:18px;border:1px solid var(--pink-100);
+  box-shadow:0 2px 12px rgba(236,72,153,.05);
+}
+.ov-greeting{line-height:1.4}
+.ov-greet-text{font-size:22px;font-weight:800;color:var(--pink-700)}
+.ov-date-text{font-size:13px;color:var(--text-mute);margin-top:4px;font-weight:500}
+.ov-deco{font-size:36px;opacity:.8}
+
+/* ─── Quick Actions ─── */
+.quick-actions{
+  display:flex;flex-wrap:wrap;gap:10px;margin-top:18px;
+}
+.qa-item{
+  display:flex;align-items:center;gap:8px;
+  padding:12px 18px;border-radius:14px;
+  background:#fff;border:1px solid var(--border);
+  cursor:pointer;font-size:13px;font-weight:500;
+  transition:all .2s;box-shadow:0 1px 2px rgba(0,0,0,.02);
+  flex:1;min-width:120px;justify-content:center;
+}
+.qa-item:hover{
+  transform:translateY(-2px);
+  box-shadow:0 6px 16px rgba(236,72,153,.1);
+  border-color:var(--pink-300);
+  background:var(--pink-50);
+}
+.qa-icon{font-size:18px}
 
 /* ─── Lists ─── */
 .list{display:flex;flex-direction:column;gap:8px}
@@ -470,6 +509,14 @@ textarea.script{min-height:60px;font-family:"SF Mono","Fira Code",monospace;font
 .fitness-day:hover{border-color:var(--pink-300)}
 .fitness-day.done{background:var(--pink-500);color:#fff;border-color:var(--pink-500)}
 .fitness-day .d{font-weight:600;font-size:13px}
+
+/* ─── Sidebar date ─── */
+.sidebar-date{
+  text-align:center;padding:8px 0 14px;margin-bottom:6px;
+  border-bottom:1px dashed var(--pink-100);
+  font-size:11px;color:var(--pink-400);font-weight:500;
+}
+.sidebar-date strong{display:block;font-size:18px;color:var(--pink-600);margin-bottom:2px}
 
 /* ─── Section divider ─── */
 .section-title{
@@ -771,6 +818,9 @@ function renderNav(){
     groups[m.group].push(m);
   });
   let html='';
+  const now=new Date();
+  const weekDay=['日','一','二','三','四','五','六'][now.getDay()];
+  html+=`<div class="sidebar-date"><strong>${now.getMonth()+1}月${now.getDate()}日</strong>星期${weekDay}</div>`;
   Object.keys(groups).forEach(g=>{
     html+=`<div class="nav-group"><div class="nav-group-title">${esc(g)}</div>`;
     groups[g].forEach(m=>{
@@ -857,10 +907,7 @@ function renderOverview(){
   const reading=d.reading.filter(b=>!b.done).length;
   const ideas=d.ideas.length;const scripts=d.scripts.length;
   const upcoming=d.countdown.map(c=>({...c,left:daysBetween(c.date)})).filter(c=>c.left>=0).sort((a,b)=>a.left-b.left).slice(0,4);
-
-  // 健身
   const fitDays=Object.keys(d.fitness).filter(k=>k.startsWith(tm)&&d.fitness[k]).length;
-  // 竞彩
   const fbMonth=d.football.filter(f=>f.date.startsWith(tm));
   const fbWin=fbMonth.filter(f=>f.result==='win').length;
   const fbTotal=fbMonth.length;
@@ -868,73 +915,88 @@ function renderOverview(){
   const fbCorrect=fbGuess.filter(f=>f.guess===f.result).length;
   const fbGuessRate=fbGuess.length?Math.round(fbCorrect/fbGuess.length*100):null;
 
-  c.innerHTML=`
-    <div class="grid grid-5" style="margin-bottom:16px">
-      <div class="stat">
-        <div class="stat-label">今日待办</div>
-        <div class="stat-value">${doneToday}/${todayTodos.length||0}</div>
+  const hr=new Date().getHours();
+  const greet=hr<6?'夜深了 \u{1F319}':hr<9?'早上好 \u{2600}\u{FE0F}':hr<12?'上午好 \u{1F324}\u{FE0F}':hr<14?'中午好 \u{1F31E}':hr<17?'下午好 \u{1F308}':hr<20?'傍晚好 \u{1F305}':'晚上好 \u{1F31C}';
+  const weekDay=['\u65E5','\u4E00','\u4E8C','\u4E09','\u56DB','\u4E94','\u516D'][new Date().getDay()];
+  const dateStr=`${new Date().getFullYear()}\u5E74${new Date().getMonth()+1}\u6708${new Date().getDate()}\u65E5 \u661F\u671F${weekDay}`;
+
+  c.innerHTML=\x60
+    <div class="overview-header">
+      <div class="ov-greeting">
+        <div class="ov-greet-text">${greet}\uFF0C\u5C0F\u4F55</div>
+        <div class="ov-date-text">${dateStr}</div>
+      </div>
+      <div class="ov-deco">\u2728</div>
+    </div>
+
+    <div class="grid grid-5" style="margin-bottom:18px">
+      <div class="stat stat-todo">
+        <div class="stat-icon-wrap">\u{1F4CB}</div>
+        <div class="stat-label">\u4ECA\u65E5\u5F85\u529E</div>
+        <div class="stat-value">${doneToday}<span style="font-size:16px;opacity:.5">/${todayTodos.length||0}</span></div>
         <div class="progress"><div class="progress-bar" style="width:${todayTodos.length?doneToday/todayTodos.length*100:0}%"></div></div>
       </div>
-      <div class="stat">
-        <div class="stat-label">今日支出</div>
-        <div class="stat-value">¥${todayExp.toFixed(2)}</div>
-        <div class="stat-sub">本月 ¥${monthExp.toFixed(0)}</div>
+      <div class="stat stat-money">
+        <div class="stat-icon-wrap">\u{1F4B3}</div>
+        <div class="stat-label">\u4ECA\u65E5\u652F\u51FA</div>
+        <div class="stat-value">&yen;${todayExp.toFixed(2)}</div>
+        <div class="stat-sub">\u672C\u6708 &yen;${monthExp.toFixed(0)}</div>
       </div>
-      <div class="stat">
-        <div class="stat-label">本月健身</div>
-        <div class="stat-value">${fitDays}天</div>
-        <div class="stat-sub">坚持就是胜利</div>
+      <div class="stat stat-fitness">
+        <div class="stat-icon-wrap">\u{1F3CB}\u{FE0F}</div>
+        <div class="stat-label">\u672C\u6708\u5065\u8EAB</div>
+        <div class="stat-value">${fitDays}<span style="font-size:14px;opacity:.5">\u5929</span></div>
+        <div class="stat-sub">${fitDays>=15?'\u{1F525} \u72B6\u6001\u706B\u70ED':fitDays>=8?'\u{1F4AA} \u7EE7\u7EED\u52A0\u6CB9':'\u{1F331} \u8D35\u5728\u575A\u6301'}</div>
       </div>
-      <div class="stat">
-        <div class="stat-label">竞彩本月</div>
-        <div class="stat-value">${fbWin}/${fbTotal||0}</div>
-        <div class="stat-sub">${fbTotal?Math.round(fbWin/fbTotal*100):0}% 胜率${fbGuessRate!=null?' · 🎯'+fbGuessRate+'%':''}</div>
+      <div class="stat stat-football">
+        <div class="stat-icon-wrap">\u26BD</div>
+        <div class="stat-label">\u7ADE\u5F69\u672C\u6708</div>
+        <div class="stat-value">${fbWin}<span style="font-size:14px;opacity:.5">/${fbTotal||0}</span></div>
+        <div class="stat-sub">${fbTotal?Math.round(fbWin/fbTotal*100):0}% \u80DC\u7387${fbGuessRate!=null?' \xB7 \u{1F3AF}'+fbGuessRate+'%':''}</div>
       </div>
-      <div class="stat">
-        <div class="stat-label">灵感/脚本</div>
-        <div class="stat-value">${ideas}/${scripts}</div>
-        <div class="stat-sub">素材积累中</div>
+      <div class="stat stat-create">
+        <div class="stat-icon-wrap">\u2728</div>
+        <div class="stat-label">\u7075\u611F/\u811A\u672C</div>
+        <div class="stat-value">${ideas}<span style="font-size:14px;opacity:.5">/${scripts}</span></div>
+        <div class="stat-sub">${ideas+scripts?'\u7D20\u6750\u6536\u96C6\u4E2D':'\u5F00\u59CB\u79EF\u7D2F\u5427'}</div>
       </div>
     </div>
 
     <div class="grid grid-2">
       <div class="card">
-        <div class="card-title">📅 即将到来</div>
-        ${upcoming.length?`<div class="list">${upcoming.map(u=>{const d=new Date(u.date+'T00:00:00');return`
+        <div class="card-title">\u{1F4C5} \u5373\u5C06\u5230\u6765</div>
+        ${upcoming.length?\x60<div class="list">${upcoming.map(u=>{const d=new Date(u.date+'T00:00:00');return \x60
           <div class="list-item">
             <div class="title">
               <div style="font-weight:500">${esc(u.name)}</div>
-              <div style="font-size:10px;color:var(--pink-400)">🌙 ${esc(lunarDateStr(d))}</div>
+              <div style="font-size:10px;color:var(--pink-400)">\u{1F319} ${esc(lunarDateStr(d))}</div>
             </div>
-            <span class="tag ${u.left<=3?'tag-danger':u.left<=7?'tag-warn':''}">${u.left===0?'🎉 今天':u.left+'天后'}</span>
-          </div>`}).join('')}</div>`:`<div class="empty">暂无重要日期</div>`}
+            <span class="tag ${u.left<=3?'tag-danger':u.left<=7?'tag-warn':''}">${u.left===0?'\u{1F389} \u4ECA\u5929':u.left+'\u5929\u540E'}</span>
+          </div>\x60}).join('')}</div>\x60:\x60<div class="empty"><span style="font-size:32px;display:block;margin-bottom:8px">\u{1F4C5}</span>\u8FD8\u6CA1\u6709\u91CD\u8981\u65E5\u671F<br><span style="font-size:12px;color:var(--pink-300)">\u70B9\u51FB\u4E0B\u65B9\u5FEB\u901F\u5165\u53E3\u6DFB\u52A0</span></div>\x60}
       </div>
 
       <div class="card">
-        <div class="card-title">📌 今日待办</div>
-        ${todayTodos.length?`<div class="list">${todayTodos.slice(0,5).map(t=>`
+        <div class="card-title">\u{1F4CC} \u4ECA\u65E5\u5F85\u529E</div>
+        ${todayTodos.length?\x60<div class="list">${todayTodos.slice(0,5).map(t=>\x60
           <div class="list-item ${t.done?'done':''}">
-            <span class="check ${t.done?'checked':''}" onclick="toggleTodo('${t.id}')">${t.done?'✓':''}</span>
+            <span class="check ${t.done?'checked':''}" onclick="toggleTodo('${t.id}')">${t.done?'\u2713':''}</span>
             <div class="title">${esc(t.text)}</div>
-            ${t.priority?`<span class="tag ${t.priority==='high'?'tag-danger':t.priority==='mid'?'tag-warn':'tag-gray'}">${t.priority==='high'?'高':t.priority==='mid'?'中':'低'}</span>`:''}
-          </div>`).join('')}
-          ${todayTodos.length>5?`<div style="text-align:center;padding:6px;font-size:12px;color:var(--text-mute)">还有 ${todayTodos.length-5} 项...</div>`:''}
-        </div>`:`<div class="empty">今日暂无待办 ✨</div>`}
+            ${t.priority?\x60<span class="tag ${t.priority==='high'?'tag-danger':t.priority==='mid'?'tag-warn':'tag-gray'}">${t.priority==='high'?'\u9AD8':t.priority==='mid'?'\u4E2D':'\u4F4E'}</span>\x60:''}
+          </div>\x60).join('')}
+          ${todayTodos.length>5?\x60<div style="text-align:center;padding:6px;font-size:12px;color:var(--text-mute)">\u8FD8\u6709 ${todayTodos.length-5} \u9879...</div>\x60:''}
+        </div>\x60:\x60<div class="empty"><span style="font-size:32px;display:block;margin-bottom:8px">\u2611\uFE0F</span>\u4ECA\u65E5\u6682\u65E0\u5F85\u529E<br><span style="font-size:12px;color:var(--pink-300)">\u4EAB\u53D7\u8F7B\u677E\u7684\u4E00\u5929 \u2728</span></div>\x60}
       </div>
     </div>
 
-    <div class="card card-soft" style="margin-top:14px">
-      <div class="card-title">⚡ 快速入口</div>
-      <div class="toolbar">
-        <button class="btn btn-sm" onclick="switchModule('todo');openTodoAdd()">+ 添加待办</button>
-        <button class="btn btn-sm" onclick="switchModule('finance');openFinanceAdd('expense')">+ 记一笔</button>
-        <button class="btn btn-sm" onclick="switchModule('fitness');fitnessToggleToday()">+ 今日健身</button>
-        <button class="btn btn-sm" onclick="switchModule('football');openFBAdd()">+ 竞猜记录</button>
-        <button class="btn btn-sm" onclick="switchModule('ideas');openIdeaAdd()">+ 记灵感</button>
-        <button class="btn btn-sm" onclick="switchModule('countdown');openCountdownAdd()">+ 重要日期</button>
-      </div>
+    <div class="quick-actions">
+      <div class="qa-item" onclick="switchModule('todo');openTodoAdd()"><span class="qa-icon">\u2611\uFE0F</span><span>\u6DFB\u52A0\u5F85\u529E</span></div>
+      <div class="qa-item" onclick="switchModule('finance');openFinanceAdd('expense')"><span class="qa-icon">\u{1F4B3}</span><span>\u8BB0\u4E00\u7B14</span></div>
+      <div class="qa-item" onclick="switchModule('fitness');fitnessToggleToday()"><span class="qa-icon">\u{1F3CB}\u{FE0F}</span><span>\u4ECA\u65E5\u5065\u8EAB</span></div>
+      <div class="qa-item" onclick="switchModule('football');openFBAdd()"><span class="qa-icon">\u26BD</span><span>\u7ADE\u731C\u8BB0\u5F55</span></div>
+      <div class="qa-item" onclick="switchModule('ideas');openIdeaAdd()"><span class="qa-icon">\u2728</span><span>\u8BB0\u7075\u611F</span></div>
+      <div class="qa-item" onclick="switchModule('countdown');openCountdownAdd()"><span class="qa-icon">\u{1F4C5}</span><span>\u91CD\u8981\u65E5\u671F</span></div>
     </div>
-  `;
+  \x60;
 }
 
 /* ─── 2. 每日任务 ─── */
