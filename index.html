@@ -920,7 +920,7 @@ function renderOverview(){
   const weekDay=['\u65E5','\u4E00','\u4E8C','\u4E09','\u56DB','\u4E94','\u516D'][new Date().getDay()];
   const dateStr=`${new Date().getFullYear()}\u5E74${new Date().getMonth()+1}\u6708${new Date().getDate()}\u65E5 \u661F\u671F${weekDay}`;
 
-  c.innerHTML=\x60
+  c.innerHTML=`
     <div class="overview-header">
       <div class="ov-greeting">
         <div class="ov-greet-text">${greet}\uFF0C\u5C0F\u4F55</div>
@@ -965,26 +965,26 @@ function renderOverview(){
     <div class="grid grid-2">
       <div class="card">
         <div class="card-title">\u{1F4C5} \u5373\u5C06\u5230\u6765</div>
-        ${upcoming.length?\x60<div class="list">${upcoming.map(u=>{const d=new Date(u.date+'T00:00:00');return \x60
+        ${upcoming.length?`<div class="list">${upcoming.map(u=>{const d=new Date(u.date+'T00:00:00');return `
           <div class="list-item">
             <div class="title">
               <div style="font-weight:500">${esc(u.name)}</div>
               <div style="font-size:10px;color:var(--pink-400)">\u{1F319} ${esc(lunarDateStr(d))}</div>
             </div>
             <span class="tag ${u.left<=3?'tag-danger':u.left<=7?'tag-warn':''}">${u.left===0?'\u{1F389} \u4ECA\u5929':u.left+'\u5929\u540E'}</span>
-          </div>\x60}).join('')}</div>\x60:\x60<div class="empty"><span style="font-size:32px;display:block;margin-bottom:8px">\u{1F4C5}</span>\u8FD8\u6CA1\u6709\u91CD\u8981\u65E5\u671F<br><span style="font-size:12px;color:var(--pink-300)">\u70B9\u51FB\u4E0B\u65B9\u5FEB\u901F\u5165\u53E3\u6DFB\u52A0</span></div>\x60}
+          </div>`}).join('')}</div>`:`<div class="empty"><span style="font-size:32px;display:block;margin-bottom:8px">\u{1F4C5}</span>\u8FD8\u6CA1\u6709\u91CD\u8981\u65E5\u671F<br><span style="font-size:12px;color:var(--pink-300)">\u70B9\u51FB\u4E0B\u65B9\u5FEB\u901F\u5165\u53E3\u6DFB\u52A0</span></div>`}
       </div>
 
       <div class="card">
         <div class="card-title">\u{1F4CC} \u4ECA\u65E5\u5F85\u529E</div>
-        ${todayTodos.length?\x60<div class="list">${todayTodos.slice(0,5).map(t=>\x60
+        ${todayTodos.length?`<div class="list">${todayTodos.slice(0,5).map(t=>`
           <div class="list-item ${t.done?'done':''}">
             <span class="check ${t.done?'checked':''}" onclick="toggleTodo('${t.id}')">${t.done?'\u2713':''}</span>
             <div class="title">${esc(t.text)}</div>
-            ${t.priority?\x60<span class="tag ${t.priority==='high'?'tag-danger':t.priority==='mid'?'tag-warn':'tag-gray'}">${t.priority==='high'?'\u9AD8':t.priority==='mid'?'\u4E2D':'\u4F4E'}</span>\x60:''}
-          </div>\x60).join('')}
-          ${todayTodos.length>5?\x60<div style="text-align:center;padding:6px;font-size:12px;color:var(--text-mute)">\u8FD8\u6709 ${todayTodos.length-5} \u9879...</div>\x60:''}
-        </div>\x60:\x60<div class="empty"><span style="font-size:32px;display:block;margin-bottom:8px">\u2611\uFE0F</span>\u4ECA\u65E5\u6682\u65E0\u5F85\u529E<br><span style="font-size:12px;color:var(--pink-300)">\u4EAB\u53D7\u8F7B\u677E\u7684\u4E00\u5929 \u2728</span></div>\x60}
+            ${t.priority?`<span class="tag ${t.priority==='high'?'tag-danger':t.priority==='mid'?'tag-warn':'tag-gray'}">${t.priority==='high'?'\u9AD8':t.priority==='mid'?'\u4E2D':'\u4F4E'}</span>`:''}
+          </div>`).join('')}
+          ${todayTodos.length>5?`<div style="text-align:center;padding:6px;font-size:12px;color:var(--text-mute)">\u8FD8\u6709 ${todayTodos.length-5} \u9879...</div>`:''}
+        </div>`:`<div class="empty"><span style="font-size:32px;display:block;margin-bottom:8px">\u2611\uFE0F</span>\u4ECA\u65E5\u6682\u65E0\u5F85\u529E<br><span style="font-size:12px;color:var(--pink-300)">\u4EAB\u53D7\u8F7B\u677E\u7684\u4E00\u5929 \u2728</span></div>`}
       </div>
     </div>
 
@@ -996,7 +996,7 @@ function renderOverview(){
       <div class="qa-item" onclick="switchModule('ideas');openIdeaAdd()"><span class="qa-icon">\u2728</span><span>\u8BB0\u7075\u611F</span></div>
       <div class="qa-item" onclick="switchModule('countdown');openCountdownAdd()"><span class="qa-icon">\u{1F4C5}</span><span>\u91CD\u8981\u65E5\u671F</span></div>
     </div>
-  \x60;
+  `;
 }
 
 /* ─── 2. 每日任务 ─── */
