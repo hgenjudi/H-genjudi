@@ -1,0 +1,2303 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#ec4899">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="小何根据地">
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgcng9IjQwIiBmaWxsPSIjZWM0ODk5Ii8+PHRleHQgeD0iOTAiIHk9IjExNSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2ZmZiIgZm9udC1zaXplPSI3MCIgZm9udC1mYW1pbHk9IkhlbHZldGljYSI+5L2VPC90ZXh0Pjwvc3ZnPg==">
+<title>小何根据地</title>
+<script src="xlsx.full.min.js"></script>
+<style>
+:root{
+  --pink-50:#fdf2f8;
+  --pink-100:#fce7f3;
+  --pink-200:#fbcfe8;
+  --pink-300:#f9a8d4;
+  --pink-400:#f472b6;
+  --pink-500:#ec4899;
+  --pink-600:#db2777;
+  --pink-700:#be185d;
+  --pink-800:#9d174d;
+  --pink-900:#831843;
+  --rose-50:#fff1f2;
+  --rose-100:#ffe4e6;
+  --rose-200:#fecdd3;
+  --rose-300:#fda4af;
+  --rose-400:#fb7185;
+  --rose-500:#f43f5e;
+  --gray-50:#fafafa;
+  --gray-100:#f4f4f5;
+  --gray-200:#e4e4e7;
+  --gray-300:#d4d4d8;
+  --gray-400:#a1a1aa;
+  --gray-500:#71717a;
+  --gray-600:#52525b;
+  --gray-700:#3f3f46;
+  --gray-800:#27272a;
+  --gray-900:#18181b;
+  --bg:#fef6fa;
+  --card:#ffffff;
+  --text:#27272a;
+  --text-soft:#52525b;
+  --text-mute:#a1a1aa;
+  --border:#fce7f3;
+  --primary:#ec4899;
+  --primary-soft:#fce7f3;
+  --primary-dark:#db2777;
+  --primary-light:#fbcfe8;
+  --accent:#f472b6;
+  --warn:#f59e0b;
+  --warn-bg:#fffbeb;
+  --danger:#ef4444;
+  --danger-bg:#fef2f2;
+  --success:#10b981;
+  --success-bg:#ecfdf5;
+  --info:#3b82f6;
+  --info-bg:#eff6ff;
+  --shadow:0 1px 3px rgba(236,72,153,.06),0 4px 12px rgba(236,72,153,.05);
+  --shadow-sm:0 1px 2px rgba(236,72,153,.04);
+  --radius:14px;
+  --radius-sm:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;scroll-behavior:smooth}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",Helvetica,Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  font-size:14px;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+button{font-family:inherit;border:none;background:none;cursor:pointer;color:inherit}
+input,textarea,select{
+  font-family:inherit;font-size:14px;outline:none;
+  border:1px solid var(--border);background:#fff;
+  border-radius:var(--radius-sm);padding:8px 10px;color:var(--text);width:100%;
+  transition:border-color .15s,box-shadow .15s;
+}
+input:focus,textarea:focus,select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(236,72,153,.15)}
+textarea{resize:vertical;min-height:80px}
+a{color:var(--primary);text-decoration:none}
+
+/* ─── Layout ─── */
+.app{display:flex;min-height:100vh;width:100%}
+.sidebar{
+  width:220px;
+  background:linear-gradient(180deg,#fdf2f8 0%,#fce7f3 50%,#fdf2f8 100%);
+  border-right:1px solid var(--border);
+  padding:18px 12px;
+  position:sticky;top:0;height:100vh;
+  overflow-y:auto;flex-shrink:0;
+  transition:transform .3s ease;
+  z-index:50;
+}
+.sidebar.collapsed{transform:translateX(-100%);position:fixed}
+.brand{
+  display:flex;align-items:center;gap:10px;margin-bottom:20px;padding:6px 6px;
+  background:linear-gradient(135deg,var(--pink-100),var(--rose-100));
+  border-radius:var(--radius-sm);
+}
+.brand-logo{
+  width:36px;height:36px;border-radius:10px;
+  background:linear-gradient(135deg,var(--pink-500),var(--rose-500));
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-weight:800;font-size:18px;
+}
+.brand-info{line-height:1.3}
+.brand-name{font-weight:700;font-size:15px;color:var(--pink-700)}
+.brand-sub{font-size:10px;color:var(--pink-400);margin-top:1px}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;border-radius:var(--radius-sm);
+  color:var(--text-soft);cursor:pointer;
+  margin-bottom:3px;font-weight:500;font-size:13px;
+  transition:all .15s;position:relative;
+}
+.nav-item:hover{background:var(--pink-50);color:var(--pink-600)}
+.nav-item.active{
+  background:linear-gradient(135deg,var(--pink-500),var(--rose-500));
+  color:#fff;box-shadow:0 4px 12px rgba(236,72,153,.3);
+}
+.nav-item .badge{
+  position:absolute;right:10px;background:#fff;color:var(--pink-600);
+  font-size:10px;padding:1px 6px;border-radius:999px;font-weight:600;
+}
+.nav-item.active .badge{background:rgba(255,255,255,.3);color:#fff}
+.nav-icon{font-size:16px;width:20px;text-align:center}
+.nav-group{margin-top:14px}
+.nav-group-title{
+  font-size:10px;color:var(--pink-300);padding:4px 12px;
+  text-transform:uppercase;letter-spacing:1px;font-weight:600;
+}
+
+.main{flex:1;min-width:0;padding:24px 28px;max-width:100%}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.hamburger{
+  display:none;width:38px;height:38px;border-radius:var(--radius-sm);
+  background:#fff;border:1px solid var(--border);align-items:center;justify-content:center;
+}
+.page-title{font-size:22px;font-weight:700;color:var(--gray-800)}
+.page-subtitle{font-size:12px;color:var(--text-mute);margin-top:2px}
+.topbar-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 14px;border-radius:var(--radius-sm);
+  background:linear-gradient(135deg,var(--pink-500),var(--rose-500));
+  color:#fff;font-weight:500;transition:all .15s;font-size:13px;
+}
+.btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(236,72,153,.25)}
+.btn-ghost{
+  background:#fff;color:var(--text-soft);
+  border:1px solid var(--border);
+}
+.btn-ghost:hover{background:var(--pink-50);color:var(--pink-600);transform:none;box-shadow:none}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-outline{background:transparent;border:1.5px solid var(--pink-300);color:var(--pink-600)}
+.btn-outline:hover{background:var(--pink-50)}
+.btn-danger{background:linear-gradient(135deg,#ef4444,#dc2626)}
+.btn-danger:hover{box-shadow:0 4px 12px rgba(239,68,68,.25)}
+
+.module{display:none;animation:fadeIn .3s ease}
+.module.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* ─── Cards ─── */
+.grid{display:grid;gap:16px}
+.grid-2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.grid-3{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.grid-4{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.grid-5{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.card{
+  background:var(--card);border-radius:var(--radius);padding:18px;
+  box-shadow:var(--shadow);border:1px solid var(--border);
+}
+.card-title{
+  font-size:14px;font-weight:600;color:var(--gray-700);margin-bottom:12px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.card-soft{background:linear-gradient(135deg,var(--pink-50),var(--rose-50))}
+
+.stat{
+  display:flex;flex-direction:column;gap:6px;
+  padding:16px;border-radius:12px;
+  background:linear-gradient(135deg,var(--pink-50),var(--rose-50));
+  border:1px solid var(--pink-100);
+}
+.stat-value{font-size:26px;font-weight:700;color:var(--pink-600)}
+.stat-label{font-size:12px;color:var(--text-mute)}
+.stat-sub{font-size:11px;color:var(--text-soft)}
+
+/* ─── Lists ─── */
+.list{display:flex;flex-direction:column;gap:8px}
+.list-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;border-radius:var(--radius-sm);
+  background:var(--gray-50);border:1px solid var(--gray-200);
+  transition:all .15s;
+}
+.list-item:hover{background:var(--pink-50);border-color:var(--pink-100)}
+.list-item.done .title{text-decoration:line-through;color:var(--text-mute)}
+.list-item.done{opacity:.7}
+
+.tag{
+  display:inline-flex;align-items:center;padding:2px 8px;
+  border-radius:999px;font-size:11px;font-weight:500;
+  background:var(--pink-100);color:var(--pink-600);
+  white-space:nowrap;
+}
+.tag-warn{background:var(--warn-bg);color:#92400e}
+.tag-danger{background:var(--danger-bg);color:#991b1b}
+.tag-success{background:var(--success-bg);color:#166534}
+.tag-info{background:var(--info-bg);color:#1e40af}
+.tag-gray{background:var(--gray-100);color:var(--gray-600)}
+.tag-purple{background:#ede9fe;color:#5b21b6}
+.tag-orange{background:#ffedd5;color:#9a3412}
+.tag-pink{background:#fce7f3;color:#9d174d}
+
+.check{
+  width:20px;height:20px;border-radius:6px;
+  border:2px solid var(--pink-300);flex-shrink:0;
+  display:inline-flex;align-items:center;justify-content:center;cursor:pointer;
+  background:#fff;transition:all .15s;font-size:12px;color:transparent;
+}
+.check:hover{border-color:var(--pink-500)}
+.check.checked{background:var(--pink-500);border-color:var(--pink-500);color:#fff}
+
+/* ─── Form ─── */
+.form-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.form-row>*{flex:1;min-width:140px}
+.form-group{margin-bottom:10px}
+.form-label{font-size:12px;color:var(--text-soft);margin-bottom:4px;font-weight:500}
+.empty{text-align:center;color:var(--text-mute);padding:30px 10px;font-size:13px}
+
+/* ─── Progress ─── */
+.progress{height:8px;background:var(--pink-100);border-radius:999px;overflow:hidden;margin-top:6px}
+.progress-bar{height:100%;background:linear-gradient(90deg,var(--pink-400),var(--pink-600));transition:width .3s;border-radius:999px}
+
+/* ─── Modal ─── */
+.modal-mask{
+  position:fixed;inset:0;background:rgba(0,0,0,.45);
+  display:none;align-items:center;justify-content:center;z-index:100;padding:16px;
+  backdrop-filter:blur(2px);
+}
+.modal-mask.show{display:flex}
+.modal{
+  background:#fff;border-radius:var(--radius);width:100%;
+  max-width:500px;padding:22px;max-height:90vh;overflow-y:auto;
+  box-shadow:0 20px 60px rgba(0,0,0,.15);
+}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:14px;color:var(--pink-700)}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+
+/* ─── Finance timeline (日/月/年) ─── */
+.finance-timeline{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+.fin-tier{
+  display:flex;align-items:center;gap:12px;
+  border-radius:var(--radius);padding:12px 16px;
+  border:1px solid var(--border);background:#fff;
+}
+.fin-tier-today{background:linear-gradient(135deg,#fdf2f8,#fff);border-color:var(--pink-200)}
+.fin-tier-month{background:linear-gradient(135deg,#f0fdf4,#fff);border-color:#bbf7d0}
+.fin-tier-year{background:linear-gradient(135deg,#eff6ff,#fff);border-color:#bfdbfe}
+.fin-tier-label{
+  font-weight:700;font-size:14px;min-width:60px;
+  color:var(--text-soft);
+}
+.fin-tier-row{display:flex;flex:1;gap:16px;justify-content:space-around}
+.fin-stat{display:flex;flex-direction:column;align-items:center;gap:2px}
+.fin-stat-val{font-size:18px;font-weight:700}
+.fin-stat-lbl{font-size:10px;color:var(--text-mute)}
+@media (max-width: 768px){
+  .fin-tier{flex-direction:column;align-items:flex-start;gap:8px}
+  .fin-tier-row{gap:12px}
+  .fin-stat-val{font-size:15px}
+}
+
+/* ─── Sidebar mask ─── */
+.sidebar-mask{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:40}
+
+/* ─── Toast ─── */
+.toast{
+  position:fixed;top:20px;left:50%;transform:translateX(-50%);
+  background:var(--gray-800);color:#fff;padding:10px 16px;border-radius:var(--radius-sm);
+  font-size:13px;z-index:200;opacity:0;pointer-events:none;
+  transition:opacity .2s,top .2s;box-shadow:0 8px 24px rgba(0,0,0,.2);
+}
+.toast.show{opacity:1;top:30px}
+
+/* ─── Switch ─── */
+.switch{
+  position:relative;width:36px;height:20px;
+  background:var(--gray-300);border-radius:999px;cursor:pointer;transition:.2s;flex-shrink:0;
+}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.2s}
+.switch.on{background:var(--pink-500)}
+.switch.on::after{left:18px}
+
+/* ─── Pills ─── */
+.pill{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 10px;border-radius:999px;
+  background:#fff;border:1px solid var(--border);
+  font-size:12px;cursor:pointer;transition:all .15s;
+}
+.pill:hover{background:var(--pink-50);border-color:var(--pink-200)}
+.pill.active{background:var(--pink-500);color:#fff;border-color:var(--pink-500)}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;align-items:center}
+
+/* ─── Special items ─── */
+.heat-item{
+  padding:14px;border-radius:12px;
+  background:linear-gradient(135deg,var(--pink-50),var(--rose-50));
+  border:1px solid var(--pink-100);margin-bottom:10px;
+}
+.heat-title{font-weight:600;color:var(--pink-800);margin-bottom:6px}
+
+.countdown-card{
+  display:flex;flex-direction:column;align-items:center;
+  padding:16px 10px;border-radius:12px;background:#fff;border:1px solid var(--border);
+}
+.countdown-card.urgent{background:linear-gradient(135deg,#fef2f2,#fff);border-color:#fecaca}
+.countdown-card.soon{background:linear-gradient(135deg,#fffbeb,#fff);border-color:#fde68a}
+.countdown-val{font-size:26px;font-weight:700;color:var(--pink-600)}
+.countdown-card.urgent .countdown-val{color:#b91c1c}
+.countdown-card.soon .countdown-val{color:#b45309}
+.countdown-name{font-size:13px;font-weight:600;margin-top:4px;text-align:center}
+.countdown-date{font-size:11px;color:var(--text-mute)}
+.countdown-lunar{font-size:11px;color:var(--pink-500);margin-top:2px;text-align:center}
+.countdown-remind{font-size:10px;color:var(--pink-400);margin-top:2px;text-align:center}
+
+.book-row{display:grid;grid-template-columns:1fr auto auto auto auto;gap:8px;align-items:center;padding:10px 12px;border-radius:var(--radius-sm);background:var(--gray-50);margin-bottom:8px}
+.book-row.done{opacity:.6}
+
+details.bordered{
+  background:var(--gray-50);border-radius:var(--radius-sm);
+  padding:10px 12px;margin-bottom:8px;border:1px solid var(--gray-200);
+}
+details.bordered summary{cursor:pointer;font-weight:500;color:var(--pink-700)}
+details.bordered[open] summary{margin-bottom:8px}
+details.bordered[open]{border-color:var(--pink-200)}
+
+.hot-tag{
+  display:inline-block;padding:2px 8px;
+  background:var(--pink-50);color:var(--pink-600);
+  border-radius:6px;font-size:11px;margin:2px;
+}
+
+.row-actions{display:flex;gap:4px}
+.icon-btn{
+  width:28px;height:28px;border-radius:8px;
+  display:inline-flex;align-items:center;justify-content:center;
+  background:#fff;border:1px solid var(--border);
+  color:var(--text-soft);font-size:13px;transition:all .15s;
+}
+.icon-btn:hover{background:var(--pink-50);color:var(--pink-600);border-color:var(--pink-200)}
+.icon-btn.danger:hover{background:#fee2e2;color:#b91c1c;border-color:#fecaca}
+
+textarea.script{min-height:60px;font-family:"SF Mono","Fira Code",monospace;font-size:13px}
+
+/* ─── Football table ─── */
+.fb-table{width:100%;border-collapse:collapse;font-size:13px}
+.fb-table th{background:var(--pink-50);padding:8px 6px;text-align:center;font-weight:600;color:var(--pink-700);font-size:12px;border-bottom:2px solid var(--pink-200)}
+.fb-table td{padding:8px 6px;text-align:center;border-bottom:1px solid var(--gray-100)}
+.fb-table tr:hover td{background:var(--pink-50)}
+.fb-win{color:#10b981;font-weight:700}
+.fb-lose{color:#ef4444;font-weight:700}
+.fb-draw{color:#f59e0b;font-weight:700}
+.fb-input{width:60px;text-align:center;padding:4px}
+
+/* ─── Fitness ─── */
+.fitness-day{
+  display:inline-flex;flex-direction:column;align-items:center;
+  width:36px;padding:4px 2px;border-radius:8px;cursor:pointer;
+  border:1px solid var(--border);margin:2px;font-size:10px;transition:all .15s;
+}
+.fitness-day:hover{border-color:var(--pink-300)}
+.fitness-day.done{background:var(--pink-500);color:#fff;border-color:var(--pink-500)}
+.fitness-day .d{font-weight:600;font-size:13px}
+
+/* ─── Section divider ─── */
+.section-title{
+  font-size:15px;font-weight:700;color:var(--pink-700);margin:18px 0 12px;
+  padding-bottom:8px;border-bottom:2px solid var(--pink-100);
+  display:flex;align-items:center;gap:8px;
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-thumb{background:var(--pink-200);border-radius:3px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ─── Mobile ─── */
+@media (max-width: 768px){
+  .sidebar{position:fixed;left:0;top:0;z-index:50;height:100vh;box-shadow:0 0 30px rgba(0,0,0,.1)}
+  .sidebar:not(.open){transform:translateX(-100%)}
+  .sidebar.open{transform:none}
+  .sidebar-mask.show{display:block}
+  .hamburger{display:inline-flex}
+  .main{padding:14px}
+  .page-title{font-size:18px}
+  .stat-value{font-size:22px}
+  .grid-4{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+  .grid-5{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-logo">何</div>
+      <div class="brand-info">
+        <div class="brand-name">小何根据地</div>
+        <div class="brand-sub">生活 · 创作 · 成长</div>
+      </div>
+    </div>
+    <div id="nav-list"></div>
+  </aside>
+  <div class="sidebar-mask" id="sidebar-mask" onclick="toggleSidebar()"></div>
+
+  <!-- Main content -->
+  <main class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="hamburger" onclick="toggleSidebar()" aria-label="菜单">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
+        <div>
+          <div class="page-title" id="page-title">今日概览</div>
+          <div class="page-subtitle" id="page-subtitle"></div>
+        </div>
+      </div>
+      <div class="topbar-actions" id="topbar-actions"></div>
+    </div>
+    <div id="modules-container"></div>
+  </main>
+</div>
+
+<div class="modal-mask" id="modal"><div class="modal" id="modal-content"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   小何根据地 — 个人生活管理工作台 v2.0
+   localStorage 存储 · 粉色系主题 · 零网络依赖
+   ============================================================ */
+
+const STORE_KEY = 'xiaohe_hq_v2';
+const DEFAULT_MODULES = [
+  {id:'overview',  name:'今日概览',   icon:'🏠', enabled:true, group:'生活'},
+  {id:'todo',      name:'每日任务',   icon:'✅', enabled:true, group:'效率'},
+  {id:'finance',   name:'记账本',     icon:'💰', enabled:true, group:'生活'},
+  {id:'countdown', name:'重要日期',   icon:'⏰', enabled:true, group:'生活'},
+  {id:'reading',   name:'阅读打卡',   icon:'📚', enabled:true, group:'成长'},
+  {id:'fitness',   name:'健身打卡',   icon:'💪', enabled:true, group:'成长'},
+  {id:'football',  name:'竞彩足球',   icon:'⚽', enabled:true, group:'生活'},
+  {id:'ideas',     name:'选题灵感',   icon:'💡', enabled:true, group:'创作'},
+  {id:'script',    name:'脚本创作库', icon:'📝', enabled:true, group:'创作'},
+  {id:'review',    name:'数据复盘',   icon:'📊', enabled:true, group:'创作'},
+  {id:'hotspot',   name:'热点雷达',   icon:'🔥', enabled:true, group:'创作'},
+  {id:'settings',  name:'模块设置',   icon:'⚙️', enabled:true, group:'系统'},
+];
+
+const EXPENSE_CATS = [
+  {key:'food',     name:'餐饮', icon:'🍱'},
+  {key:'transport',name:'交通', icon:'🚌'},
+  {key:'shopping', name:'购物', icon:'🛍️'},
+  {key:'housing',  name:'住房', icon:'🏠'},
+  {key:'fun',      name:'娱乐', icon:'🎮'},
+  {key:'medical',  name:'医疗', icon:'💊'},
+  {key:'edu',      name:'教育', icon:'📖'},
+  {key:'digital',  name:'数码', icon:'📱'},
+  {key:'beauty',   name:'美妆', icon:'💄'},
+  {key:'pet',      name:'宠物', icon:'🐾'},
+  {key:'other',    name:'其他', icon:'📦'},
+];
+
+const FB_LEAGUES = ['英超','西甲','意甲','德甲','法甲','欧冠','中超','日职','韩K','澳超','美职','其他'];
+const FB_RESULTS = [
+  {key:'win',  name:'胜', color:'fb-win'},
+  {key:'draw', name:'平', color:'fb-draw'},
+  {key:'lose', name:'负', color:'fb-lose'},
+];
+
+const SCRIPT_TEMPLATES = [
+  {icon:'💥',name:'冲突开场',desc:'反差/矛盾吸引停留',
+   tpl:`【冲突开场脚本】
+
+🎯 前3秒钩子：
+"你以为的______，其实都是错的。"
+
+📸 场景描述：
+
+🔄 转折点：
+
+💡 核心观点（3个）：
+1.
+2.
+3.
+
+🙋 结尾互动引导：
+
+#冲突 #反转 #干货`},
+  {icon:'📖',name:'故事口播',desc:'故事带入引发共鸣',
+   tpl:`【故事型口播脚本】
+
+🎯 开头悬念：
+"直到那天，我才明白..."
+
+📖 故事背景：
+
+⚡ 冲突事件：
+
+🔄 情绪转折：
+
+💡 观点升华：
+
+🙋 互动结尾：
+
+#故事 #共鸣 #真实`},
+  {icon:'📋',name:'干货清单',desc:'列举式结构',
+   tpl:`【干货清单脚本】
+
+🎯 钩子：
+"记住这5点，______不再难"
+
+1️⃣ 第一点：
+
+2️⃣ 第二点：
+
+3️⃣ 第三点：
+
+4️⃣ 第四点：
+
+5️⃣ 第五点：
+
+📌 总结回顾：
+
+#干货 #实用 #收藏`},
+  {icon:'❓',name:'提问互动',desc:'问题引导评论',
+   tpl:`【提问互动脚本】
+
+🎯 开头提问：
+"你有没有想过，为什么______？"
+
+⚠️ 常见误区（2-3个）：
+
+💡 我的观点：
+
+📊 案例佐证：
+
+🙋 反问互动：
+"你觉得呢？评论区告诉我"
+
+#互动 #评论 #观点`},
+];
+
+const TITLE_PATTERNS = [
+  t=>`${t}的3个真相，看完沉默了`,
+  t=>`为什么${t}？答案没那么简单`,
+  t=>`${t}的底层逻辑，90%人都搞错了`,
+  t=>`我研究了100个${t}案例，发现...`,
+  t=>`关于${t}，这是我听过最好的答案`,
+  t=>`别再${t}了！其实应该这样`,
+  t=>`${t}前vs${t}后，变化惊人`,
+  t=>`5分钟搞懂${t}，建议收藏`,
+];
+
+/* ─── State ─── */
+let state = loadState();
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      const ids = new Set(parsed.modules.map(m=>m.id));
+      DEFAULT_MODULES.forEach(dm=>{if(!ids.has(dm.id))parsed.modules.push(dm)});
+      return parsed;
+    }
+  }catch(e){console.warn('Load error:',e)}
+  return {
+    modules: JSON.parse(JSON.stringify(DEFAULT_MODULES)),
+    data: {
+      todo:[], finance:[], countdown:[], reading:[], ideas:[],
+      scripts:[], reviews:[], hotspots:[], football:[], fitness:{}
+    }
+  };
+}
+
+function saveState(){localStorage.setItem(STORE_KEY, JSON.stringify(state))}
+
+/* ─── Utils ─── */
+const $ = sel => document.querySelector(sel);
+const $$ = sel => document.querySelectorAll(sel);
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
+function today(){const d=new Date();return d.toISOString().slice(0,10)}
+function fmtDate(d){const x=new Date(d);return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`}
+function fmtTime(d){const x=new Date(d);return `${String(x.getHours()).padStart(2,'0')}:${String(x.getMinutes()).padStart(2,'0')}`}
+function daysBetween(target){const t=new Date(target),now=new Date();t.setHours(0,0,0,0);now.setHours(0,0,0,0);return Math.round((t-now)/864e5)}
+function esc(s){if(s==null)return'';return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function thisMonth(){const n=new Date();return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`}
+function daysInMonth(ym){
+  const [y,m] = ym.split('-').map(Number);
+  return new Date(y,m,0).getDate();
+}
+
+/* ─── 农历转换（浏览器原生 Intl API，准确可靠） ─── */
+const LUNAR_FMT = (()=>{
+  try{return new Intl.DateTimeFormat('zh-CN-u-ca-chinese',{year:'numeric',month:'numeric',day:'numeric'})}catch(e){return null}
+})();
+const STEM = '甲乙丙丁戊己庚辛壬癸';
+const BRANCH = '子丑寅卯辰巳午未申酉戌亥';
+const ZODIAC = '鼠牛虎兔龙蛇马羊猴鸡狗猪';
+const LUN_DAY_MAP = ['','初一','初二','初三','初四','初五','初六','初七','初八','初九','初十','十一','十二','十三','十四','十五','十六','十七','十八','十九','二十','廿一','廿二','廿三','廿四','廿五','廿六','廿七','廿八','廿九','三十'];
+// 中文数字 → 阿拉伯数字
+const CN_NUM = {'一':1,'二':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'十':10,'十一':11,'十二':12,'冬':11,'腊':12};
+function cnToNum(s){
+  // 去掉"月"字，只保留月份数字部分
+  const clean = s.replace('月','');
+  return CN_NUM[clean]||parseInt(clean)||1;
+}
+
+function lunarYear(y){return STEM[(y-4)%10]+BRANCH[(y-4)%12]+ZODIAC[(y-4)%12]}
+
+function lunarDateStr(d){
+  if(!LUNAR_FMT)return'';
+  const parts = LUNAR_FMT.formatToParts(d);
+  const obj={};parts.forEach(p=>{if(p.type!=='literal')obj[p.type]=p.value});
+  const mStr = obj.month||'';const dStr = obj.day||'';
+  const mNum = cnToNum(mStr.replace('闰',''));
+  const dNum = parseInt(dStr)||1;
+  const isLeap = mStr.includes('闰');
+
+  if(!isLeap){
+    if(mNum===1&&dNum===1)return'春节';
+    if(mNum===1&&dNum===15)return'元宵节';
+    if(mNum===5&&dNum===5)return'端午节';
+    if(mNum===7&&dNum===7)return'七夕';
+    if(mNum===7&&dNum===15)return'中元节';
+    if(mNum===8&&dNum===15)return'中秋节';
+    if(mNum===9&&dNum===9)return'重阳节';
+  }
+  return (isLeap?'闰':'')+mStr.replace('闰','')+(LUN_DAY_MAP[dNum]||('第'+dNum+'天'));
+}
+
+function toast(msg){
+  const t=$('#toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),1800);
+}
+
+/* ─── Modal ─── */
+function openModal(html){$('#modal-content').innerHTML=html;$('#modal').classList.add('show')}
+function closeModal(){$('#modal').classList.remove('show')}
+$('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal()})
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()})
+
+/* ─── Sidebar ─── */
+function toggleSidebar(){
+  const sb=$('#sidebar');
+  if(window.innerWidth<=768){
+    sb.classList.toggle('open');
+    $('#sidebar-mask').classList.toggle('show');
+  }else{sb.classList.toggle('collapsed')}
+}
+
+function renderNav(){
+  const wrap=$('#nav-list');
+  const groups={};
+  state.modules.filter(m=>m.enabled).forEach(m=>{
+    groups[m.group]=groups[m.group]||[];
+    groups[m.group].push(m);
+  });
+  let html='';
+  Object.keys(groups).forEach(g=>{
+    html+=`<div class="nav-group"><div class="nav-group-title">${esc(g)}</div>`;
+    groups[g].forEach(m=>{
+      html+=`<div class="nav-item" data-id="${m.id}" onclick="switchModule('${m.id}')">
+        <span class="nav-icon">${m.icon}</span><span>${esc(m.name)}</span>
+      </div>`;
+    });
+    html+=`</div>`;
+  });
+  wrap.innerHTML=html;
+  highlightNav();
+}
+
+function highlightNav(){
+  $$('#nav-list .nav-item').forEach(el=>el.classList.toggle('active',el.dataset.id===currentModule));
+}
+
+let currentModule='overview';
+
+function switchModule(id){
+  currentModule=id;
+  $$('.module').forEach(m=>m.classList.remove('active'));
+  const el=document.getElementById('mod-'+id);
+  if(el)el.classList.add('active');
+  const mod=state.modules.find(m=>m.id===id);
+  if(mod){$('#page-title').textContent=mod.name;$('#page-subtitle').textContent=subtitles[id]||''}
+  highlightNav();
+  renderTopbar();
+  if(window.innerWidth<=768){$('#sidebar').classList.remove('open');$('#sidebar-mask').classList.remove('show')}
+}
+
+const subtitles={
+  overview:'一切尽在掌握 ✨',
+  todo:'每天待办清晰可见',
+  finance:'精打细算每一笔',
+  countdown:'不错过任何重要时刻',
+  reading:'养成阅读好习惯',
+  fitness:'坚持就是胜利',
+  football:'理性分析，快乐竞猜',
+  ideas:'灵感不再溜走',
+  script:'高效创作脚本',
+  review:'数据驱动成长',
+  hotspot:'紧跟热点趋势',
+  settings:'管理你的工作台',
+};
+
+function renderTopbar(){
+  const ta=$('#topbar-actions');
+  ta.innerHTML='';
+  ta.innerHTML+=`<button class="btn btn-ghost btn-sm" onclick="exportAll()">📤 备份</button>`;
+  ta.innerHTML+=`<button class="btn btn-ghost btn-sm" onclick="importAll()">📥 恢复</button>`;
+}
+
+/* ─── Modules container ─── */
+function renderAllModules(){
+  const c=$('#modules-container');
+  c.innerHTML='';
+  state.modules.forEach(m=>{
+    if(!m.enabled)return;
+    const div=document.createElement('div');
+    div.className='module';div.id='mod-'+m.id;
+    div.innerHTML=`<div id="content-${m.id}"></div>`;
+    c.appendChild(div);
+  });
+  renderOverview();renderTodo();renderFinance();renderCountdown();
+  renderReading();renderFitness();renderFootball();
+  renderIdeas();renderScript();renderReview();renderHotspot();renderSettings();
+  switchModule(currentModule);
+}
+
+/* ============================================================
+   模块渲染
+   ============================================================ */
+
+/* ─── 1. 今日概览 ─── */
+function renderOverview(){
+  const c=$('#content-overview');
+  const d=state.data;const td=today();const tm=thisMonth();
+  const todayTodos=d.todo.filter(t=>!t.done||t.doneDate===td);
+  const doneToday=todayTodos.filter(t=>t.done).length;
+  const todayExp=d.finance.filter(f=>f.date===td&&f.type==='expense').reduce((s,f)=>s+Number(f.amount||0),0);
+  const monthExp=d.finance.filter(f=>f.type==='expense'&&f.date.startsWith(tm)).reduce((s,f)=>s+Number(f.amount||0),0);
+  const reading=d.reading.filter(b=>!b.done).length;
+  const ideas=d.ideas.length;const scripts=d.scripts.length;
+  const upcoming=d.countdown.map(c=>({...c,left:daysBetween(c.date)})).filter(c=>c.left>=0).sort((a,b)=>a.left-b.left).slice(0,4);
+
+  // 健身
+  const fitDays=Object.keys(d.fitness).filter(k=>k.startsWith(tm)&&d.fitness[k]).length;
+  // 竞彩
+  const fbMonth=d.football.filter(f=>f.date.startsWith(tm));
+  const fbWin=fbMonth.filter(f=>f.result==='win').length;
+  const fbTotal=fbMonth.length;
+  const fbGuess=fbMonth.filter(f=>f.guess);
+  const fbCorrect=fbGuess.filter(f=>f.guess===f.result).length;
+  const fbGuessRate=fbGuess.length?Math.round(fbCorrect/fbGuess.length*100):null;
+
+  c.innerHTML=`
+    <div class="grid grid-5" style="margin-bottom:16px">
+      <div class="stat">
+        <div class="stat-label">今日待办</div>
+        <div class="stat-value">${doneToday}/${todayTodos.length||0}</div>
+        <div class="progress"><div class="progress-bar" style="width:${todayTodos.length?doneToday/todayTodos.length*100:0}%"></div></div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">今日支出</div>
+        <div class="stat-value">¥${todayExp.toFixed(2)}</div>
+        <div class="stat-sub">本月 ¥${monthExp.toFixed(0)}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">本月健身</div>
+        <div class="stat-value">${fitDays}天</div>
+        <div class="stat-sub">坚持就是胜利</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">竞彩本月</div>
+        <div class="stat-value">${fbWin}/${fbTotal||0}</div>
+        <div class="stat-sub">${fbTotal?Math.round(fbWin/fbTotal*100):0}% 胜率${fbGuessRate!=null?' · 🎯'+fbGuessRate+'%':''}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">灵感/脚本</div>
+        <div class="stat-value">${ideas}/${scripts}</div>
+        <div class="stat-sub">素材积累中</div>
+      </div>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="card-title">📅 即将到来</div>
+        ${upcoming.length?`<div class="list">${upcoming.map(u=>{const d=new Date(u.date+'T00:00:00');return`
+          <div class="list-item">
+            <div class="title">
+              <div style="font-weight:500">${esc(u.name)}</div>
+              <div style="font-size:10px;color:var(--pink-400)">🌙 ${esc(lunarDateStr(d))}</div>
+            </div>
+            <span class="tag ${u.left<=3?'tag-danger':u.left<=7?'tag-warn':''}">${u.left===0?'🎉 今天':u.left+'天后'}</span>
+          </div>`}).join('')}</div>`:`<div class="empty">暂无重要日期</div>`}
+      </div>
+
+      <div class="card">
+        <div class="card-title">📌 今日待办</div>
+        ${todayTodos.length?`<div class="list">${todayTodos.slice(0,5).map(t=>`
+          <div class="list-item ${t.done?'done':''}">
+            <span class="check ${t.done?'checked':''}" onclick="toggleTodo('${t.id}')">${t.done?'✓':''}</span>
+            <div class="title">${esc(t.text)}</div>
+            ${t.priority?`<span class="tag ${t.priority==='high'?'tag-danger':t.priority==='mid'?'tag-warn':'tag-gray'}">${t.priority==='high'?'高':t.priority==='mid'?'中':'低'}</span>`:''}
+          </div>`).join('')}
+          ${todayTodos.length>5?`<div style="text-align:center;padding:6px;font-size:12px;color:var(--text-mute)">还有 ${todayTodos.length-5} 项...</div>`:''}
+        </div>`:`<div class="empty">今日暂无待办 ✨</div>`}
+      </div>
+    </div>
+
+    <div class="card card-soft" style="margin-top:14px">
+      <div class="card-title">⚡ 快速入口</div>
+      <div class="toolbar">
+        <button class="btn btn-sm" onclick="switchModule('todo');openTodoAdd()">+ 添加待办</button>
+        <button class="btn btn-sm" onclick="switchModule('finance');openFinanceAdd('expense')">+ 记一笔</button>
+        <button class="btn btn-sm" onclick="switchModule('fitness');fitnessToggleToday()">+ 今日健身</button>
+        <button class="btn btn-sm" onclick="switchModule('football');openFBAdd()">+ 竞猜记录</button>
+        <button class="btn btn-sm" onclick="switchModule('ideas');openIdeaAdd()">+ 记灵感</button>
+        <button class="btn btn-sm" onclick="switchModule('countdown');openCountdownAdd()">+ 重要日期</button>
+      </div>
+    </div>
+  `;
+}
+
+/* ─── 2. 每日任务 ─── */
+function renderTodo(){
+  const c=$('#content-todo');
+  const all=state.data.todo;const td=today();
+  const filter=state._todoFilter||'all';
+  const todayItems=all.filter(t=>t.date===td||!t.done);
+
+  let list=all;
+  if(filter==='today')list=todayItems;
+  else if(filter==='done')list=all.filter(t=>t.done);
+  else if(filter==='undone')list=all.filter(t=>!t.done);
+
+  const totalToday=todayItems.length;
+  const doneToday=todayItems.filter(t=>t.done).length;
+  const pct=totalToday?Math.round(doneToday/totalToday*100):0;
+
+  c.innerHTML=`
+    <div class="toolbar">
+      ${[
+        ['all','全部',all.length],
+        ['today','今日',todayItems.length],
+        ['undone','未完成',all.filter(t=>!t.done).length],
+        ['done','已完成',all.filter(t=>t.done).length]
+      ].map(([k,lbl,n])=>`<span class="pill ${filter===k?'active':''}" onclick="setTodoFilter('${k}')">${lbl} (${n})</span>`).join('')}
+      <div style="flex:1"></div>
+      <button class="btn btn-sm" onclick="openTodoAdd()">+ 新增任务</button>
+    </div>
+    ${totalToday?`
+    <div class="card card-soft" style="margin-bottom:12px">
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px">📊 今日进度 ${doneToday}/${totalToday} (${pct}%)</div>
+      <div class="progress" style="height:10px"><div class="progress-bar" style="width:${pct}%"></div></div>
+    </div>`:''}
+    <div class="card">
+      ${list.length?`<div class="list">${list.map(t=>`
+        <div class="list-item ${t.done?'done':''}">
+          <span class="check ${t.done?'checked':''}" onclick="toggleTodo('${t.id}')">${t.done?'✓':''}</span>
+          <div class="title" style="cursor:pointer" onclick="editTodo('${t.id}')">${esc(t.text)}</div>
+          ${t.date&&t.date!==td?`<span class="tag tag-info">${t.date}</span>`:''}
+          ${t.priority?`<span class="tag ${t.priority==='high'?'tag-danger':t.priority==='mid'?'tag-warn':'tag-gray'}">${t.priority==='high'?'高':t.priority==='mid'?'中':'低'}</span>`:''}
+          <button class="icon-btn danger" onclick="deleteTodo('${t.id}')" title="删除">🗑</button>
+        </div>`).join('')}</div>`:`<div class="empty">暂无任务</div>`}
+    </div>
+  `;
+}
+function setTodoFilter(f){state._todoFilter=f;renderTodo()}
+function openTodoAdd(id){
+  const v=id?state.data.todo.find(x=>x.id===id):{text:'',date:today(),priority:'mid'};
+  openModal(`
+    <div class="modal-title">${id?'编辑':'新增'}任务</div>
+    <div class="form-row"><input id="m-text" placeholder="任务内容" value="${esc(v.text)}" autofocus></div>
+    <div class="form-row">
+      <input id="m-date" type="date" value="${v.date}">
+      <select id="m-priority">
+        <option value="low" ${v.priority==='low'?'selected':''}>低优先级</option>
+        <option value="mid" ${v.priority==='mid'?'selected':''}>中优先级</option>
+        <option value="high" ${v.priority==='high'?'selected':''}>高优先级</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+      <button class="btn" onclick="saveTodo('${id||''}')">保存</button>
+    </div>
+  `);
+}
+function saveTodo(id){
+  const text=$('#m-text').value.trim();
+  if(!text){toast('请填写任务');return}
+  const date=$('#m-date').value||today(),priority=$('#m-priority').value;
+  if(id){const t=state.data.todo.find(x=>x.id===id);if(t){t.text=text;t.date=date;t.priority=priority}}
+  else{state.data.todo.unshift({id:uid(),text,date,priority,done:false})}
+  saveState();closeModal();renderTodo();renderOverview();toast('已保存');
+}
+function toggleTodo(id){
+  const t=state.data.todo.find(x=>x.id===id);
+  if(t){t.done=!t.done;t.doneDate=t.done?today():null;saveState();renderTodo();renderOverview()}
+}
+function editTodo(id){openTodoAdd(id)}
+function deleteTodo(id){
+  if(!confirm('确认删除？'))return;
+  state.data.todo=state.data.todo.filter(x=>x.id!==id);
+  saveState();renderTodo();renderOverview();toast('已删除');
+}
+
+/* ─── 3. 记账本 ─── */
+// ─── 消费分析引擎 ───
+// 不必要消费判定规则：按分类 + 关键词
+const UNNECESSARY_RULES = [
+  {cat:'fun',     label:'娱乐消费',    msg:'娱乐支出属于弹性消费，建议设定月度预算上限'},
+  {cat:'shopping',label:'购物消费',    msg:'非必需品购物建议三思而后行，可尝试「48小时冷静期」'},
+  {cat:'beauty',  label:'美妆消费',    msg:'美妆产品容易冲动购买，建议用完再补，避免囤货'},
+  {cat:'digital', label:'数码消费',    msg:'数码产品更新换代快，建议评估是否刚需再入手'},
+];
+// 可标记「必要/不必要」的备注关键词（用户可在记账备注中添加）
+const NECESSARY_KEYWORDS = ['必需','必要','刚需','生活必需品','通勤','话费','房租','房贷','水电','燃气','药'];
+function isUnnecessary(f){
+  // 先看分类
+  const rule = UNNECESSARY_RULES.find(r=>r.cat===f.category);
+  if(!rule) return {unnecessary:false,reason:''};
+  // 再看备注关键词
+  const note = (f.note||'').toLowerCase();
+  const isNecessary = NECESSARY_KEYWORDS.some(k=>note.includes(k));
+  if(isNecessary) return {unnecessary:false,reason:''};
+  return {unnecessary:true,reason:rule.msg,categoryLabel:rule.label};
+}
+
+function renderFinance(){
+  const c=$('#content-finance');const all=state.data.finance;const td=today();const tm=thisMonth();
+  const year = String(new Date().getFullYear());
+
+  // ── 日/月/年 三层统计 ──
+  const todayList = all.filter(f=>f.date===td);
+  const todayIncome = todayList.filter(f=>f.type==='income').reduce((s,f)=>s+Number(f.amount||0),0);
+  const todayExpense = todayList.filter(f=>f.type==='expense').reduce((s,f)=>s+Number(f.amount||0),0);
+
+  const monthList = all.filter(f=>f.date.startsWith(tm));
+  const monthIncome = monthList.filter(f=>f.type==='income').reduce((s,f)=>s+Number(f.amount||0),0);
+  const monthExpense = monthList.filter(f=>f.type==='expense').reduce((s,f)=>s+Number(f.amount||0),0);
+
+  const yearList = all.filter(f=>f.date.startsWith(year));
+  const yearIncome = yearList.filter(f=>f.type==='income').reduce((s,f)=>s+Number(f.amount||0),0);
+  const yearExpense = yearList.filter(f=>f.type==='expense').reduce((s,f)=>s+Number(f.amount||0),0);
+
+  // ── 分类占比（月） ──
+  const byCat={};monthList.filter(f=>f.type==='expense').forEach(f=>{byCat[f.category]=(byCat[f.category]||0)+Number(f.amount||0)});
+  const cats=Object.entries(byCat).sort((a,b)=>b[1]-a[1]);const max=cats.length?cats[0][1]:0;
+
+  // ── 不必要消费分析（月） ──
+  const monthExpenseOnly = monthList.filter(f=>f.type==='expense');
+  const unnecessaryList = monthExpenseOnly.map(f=>({...f,analysis:isUnnecessary(f)})).filter(f=>f.analysis.unnecessary);
+  const unnecessaryTotal = unnecessaryList.reduce((s,f)=>s+Number(f.amount||0),0);
+  const necessaryTotal = monthExpense - unnecessaryTotal;
+  const unnecessaryPct = monthExpense ? Math.round(unnecessaryTotal/monthExpense*100) : 0;
+  // 按分类聚合不必要消费
+  const unnecessaryByCat = {};
+  unnecessaryList.forEach(f=>{
+    const lbl = f.analysis.categoryLabel||'其他';
+    unnecessaryByCat[lbl] = (unnecessaryByCat[lbl]||0) + Number(f.amount||0);
+  });
+
+  // ── 最近记录 ──
+  const recent=all.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,40);
+
+  c.innerHTML=`
+    <!-- 日/月/年 总计面板 -->
+    <div class="section-title">📆 消费总览</div>
+    <div class="finance-timeline">
+      <div class="fin-tier fin-tier-today">
+        <div class="fin-tier-label">📅 今日</div>
+        <div class="fin-tier-row">
+          <div class="fin-stat"><span class="fin-stat-val" style="color:#10b981">+¥${todayIncome.toFixed(2)}</span><span class="fin-stat-lbl">收入</span></div>
+          <div class="fin-stat"><span class="fin-stat-val" style="color:#ef4444">-¥${todayExpense.toFixed(2)}</span><span class="fin-stat-lbl">支出</span></div>
+          <div class="fin-stat"><span class="fin-stat-val" style="color:${todayIncome>=todayExpense?'#10b981':'#ef4444'}">¥${(todayIncome-todayExpense).toFixed(2)}</span><span class="fin-stat-lbl">净额</span></div>
+        </div>
+      </div>
+      <div class="fin-tier fin-tier-month">
+        <div class="fin-tier-label">📆 本月</div>
+        <div class="fin-tier-row">
+          <div class="fin-stat"><span class="fin-stat-val" style="color:#10b981">+¥${monthIncome.toFixed(2)}</span><span class="fin-stat-lbl">收入</span></div>
+          <div class="fin-stat"><span class="fin-stat-val" style="color:#ef4444">-¥${monthExpense.toFixed(2)}</span><span class="fin-stat-lbl">支出</span></div>
+          <div class="fin-stat"><span class="fin-stat-val" style="color:${monthIncome>=monthExpense?'#10b981':'#ef4444'}">¥${(monthIncome-monthExpense).toFixed(2)}</span><span class="fin-stat-lbl">净额</span></div>
+        </div>
+      </div>
+      <div class="fin-tier fin-tier-year">
+        <div class="fin-tier-label">📆 本年</div>
+        <div class="fin-tier-row">
+          <div class="fin-stat"><span class="fin-stat-val" style="color:#10b981">+¥${yearIncome.toFixed(2)}</span><span class="fin-stat-lbl">收入</span></div>
+          <div class="fin-stat"><span class="fin-stat-val" style="color:#ef4444">-¥${yearExpense.toFixed(2)}</span><span class="fin-stat-lbl">支出</span></div>
+          <div class="fin-stat"><span class="fin-stat-val" style="color:${yearIncome>=yearExpense?'#10b981':'#ef4444'}">¥${(yearIncome-yearExpense).toFixed(2)}</span><span class="fin-stat-lbl">净额</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 不必要消费分析 -->
+    ${unnecessaryTotal>0?`
+    <div class="section-title">🔍 消费分析</div>
+    <div class="grid grid-2" style="margin-bottom:12px">
+      <div class="card card-soft" style="border:1px solid #fecaca;background:linear-gradient(135deg,#fff5f5,#fff)">
+        <div class="card-title" style="color:#b91c1c">⚠️ 可能不必要的消费 <span class="tag tag-danger">¥${unnecessaryTotal.toFixed(2)} / ${unnecessaryPct}%</span></div>
+        <div style="font-size:12px;color:var(--text-soft);margin-bottom:10px">以下支出可考虑优化，点击查看建议</div>
+        ${Object.entries(unnecessaryByCat).sort((a,b)=>b[1]-a[1]).map(([lbl,v])=>`
+          <div style="margin-bottom:6px">
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:2px">
+              <span>${esc(lbl)}</span><span style="font-weight:600;color:#b91c1c">¥${v.toFixed(0)}</span>
+            </div>
+            <div class="progress"><div class="progress-bar" style="background:linear-gradient(90deg,#fca5a5,#ef4444);width:${v/unnecessaryTotal*100}%"></div></div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="card" style="border:1px solid #bbf7d0;background:linear-gradient(135deg,#f0fdf4,#fff)">
+        <div class="card-title" style="color:#166534">✅ 必要消费 <span class="tag tag-success">¥${necessaryTotal.toFixed(2)} / ${100-unnecessaryPct}%</span></div>
+        <div style="font-size:13px;color:var(--text-soft);line-height:1.8">
+          <p>💡 <strong>优化建议：</strong></p>
+          ${unnecessaryList.slice(0,5).map(f=>`
+            <details style="margin:4px 0;font-size:12px">
+              <summary style="cursor:pointer;color:var(--pink-600)">${esc(f.note||EXPENSE_CATS.find(c=>c.key===f.category)?.name||'消费')} ¥${Number(f.amount).toFixed(2)}</summary>
+              <div style="padding:4px 8px;color:var(--text-mute)">${esc(f.analysis.reason)}</div>
+            </details>
+          `).join('')}
+          ${unnecessaryList.length>5?`<div style="font-size:11px;color:var(--text-mute)">...还有 ${unnecessaryList.length-5} 条</div>`:''}
+        </div>
+      </div>
+    </div>`:''}
+
+    <div class="section-title">📊 分类 & 记录</div>
+    <div class="toolbar">
+      <button class="btn btn-sm" onclick="openFinanceAdd('expense')">- 支出</button>
+      <button class="btn btn-sm" style="background:linear-gradient(135deg,#10b981,#059669)" onclick="openFinanceAdd('income')">+ 收入</button>
+      <div style="flex:1"></div>
+      <button class="btn btn-ghost btn-sm" onclick="exportFinance()">📊 导出Excel</button>
+    </div>
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="card-title">📊 本月分类占比</div>
+        ${cats.length?`<div class="list">${cats.map(([k,v])=>{const cat=EXPENSE_CATS.find(c=>c.key===k);const isUn=UNNECESSARY_RULES.some(r=>r.cat===k);return`
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+              <span>${cat?cat.icon+' '+cat.name:k}${isUn?' ⚡':''}</span>
+              <span style="font-weight:600">¥${v.toFixed(0)}</span>
+            </div>
+            <div class="progress"><div class="progress-bar" style="background:linear-gradient(90deg,${isUn?'#fca5a5,#ef4444':'var(--pink-400),var(--pink-600)'});width:${v/max*100}%"></div></div>
+          </div>`}).join('')}</div>`:`<div class="empty">本月暂无支出</div>`}
+        <div style="font-size:10px;color:var(--text-mute);margin-top:6px">⚡ 标记为弹性消费分类，建议控制预算</div>
+      </div>
+      <div class="card">
+        <div class="card-title">🧾 最近记录</div>
+        ${recent.length?`<div class="list">${recent.map(f=>{const cat=EXPENSE_CATS.find(c=>c.key===f.category);const un=f.type==='expense'&&isUnnecessary(f).unnecessary;return`
+          <div class="list-item" style="${un?'border-left:3px solid #ef4444;':''}">
+            <span style="font-size:18px">${cat?cat.icon:'💵'}</span>
+            <div class="title">
+              <div style="font-weight:500;display:flex;align-items:center;gap:6px">
+                ${esc(f.note||(cat?cat.name:'其他'))}
+                ${un?`<span class="tag tag-danger" style="font-size:10px;padding:1px 5px" title="${esc(isUnnecessary(f).reason)}">可优化</span>`:''}
+              </div>
+              <div style="font-size:11px;color:var(--text-mute)">${f.date}</div>
+            </div>
+            <span class="tag" style="background:${f.type==='income'?'#dcfce7':'#fee2e2'};color:${f.type==='income'?'#166534':'#991b1b'}">${f.type==='income'?'+':'-'}¥${Number(f.amount).toFixed(2)}</span>
+            <button class="icon-btn danger" onclick="deleteFinance('${f.id}')">🗑</button>
+          </div>`}).join('')}</div>`:`<div class="empty">还没有记录</div>`}
+      </div>
+    </div>
+  `;
+}
+function openFinanceAdd(type){
+  openModal(`
+    <div class="modal-title">${type==='income'?'记一笔收入':'记一笔支出'}</div>
+    <div class="form-row">
+      <input id="m-amount" type="number" step="0.01" placeholder="金额" autofocus>
+      <input id="m-date" type="date" value="${today()}">
+    </div>
+    ${type==='expense'?`
+    <div class="form-group">
+      <div class="form-label">分类</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${EXPENSE_CATS.map((c,i)=>`<span class="pill ${i===0?'active':''}" data-cat="${c.key}" onclick="pickCat(this)">${c.icon} ${c.name}</span>`).join('')}
+      </div>
+    </div>`:''}
+    <div class="form-row"><input id="m-note" placeholder="备注（可选）"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+      <button class="btn" onclick="saveFinance('${type}')">保存</button>
+    </div>
+  `);
+  setTimeout(()=>$('#m-amount').focus(),50);
+}
+function pickCat(el){el.parentElement.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));el.classList.add('active')}
+function saveFinance(type){
+  const amount=parseFloat($('#m-amount').value);
+  if(!amount||amount<=0){toast('请输入金额');return}
+  const date=$('#m-date').value||today(),note=$('#m-note').value.trim();
+  let category='other';
+  if(type==='expense'){const active=document.querySelector('.pill.active[data-cat]');if(active)category=active.dataset.cat}
+  state.data.finance.unshift({id:uid(),type,amount,date,category,note});
+  saveState();closeModal();renderFinance();renderOverview();toast('已记录');
+}
+function deleteFinance(id){
+  if(!confirm('确认删除？'))return;
+  state.data.finance=state.data.finance.filter(x=>x.id!==id);
+  saveState();renderFinance();renderOverview();toast('已删除');
+}
+function exportFinance(){
+  const rows=[['日期','类型','分类','金额','备注']];
+  state.data.finance.forEach(f=>{const cat=EXPENSE_CATS.find(c=>c.key===f.category);rows.push([f.date,f.type==='income'?'收入':'支出',cat?cat.name:(f.category||''),f.amount,f.note||''])});
+  const ws=XLSX.utils.aoa_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'记账');
+  XLSX.writeFile(wb,`记账-${today()}.xlsx`);toast('已导出');
+}
+
+/* ─── 4. 重要日期 ─── */
+function renderCountdown(){
+  const c=$('#content-countdown');
+  const items=state.data.countdown.map(x=>{
+    const d = new Date(x.date+'T00:00:00');
+    return {...x,left:daysBetween(x.date),lunar:lunarDateStr(d),zodiac:lunarYear(d.getFullYear())};
+  }).sort((a,b)=>a.left-b.left);
+
+  // 检查当天是否需要提醒
+  if(state.data.countdown.length){
+    checkCountdownReminders();
+  }
+
+  c.innerHTML=`
+    <div class="toolbar">
+      <button class="btn btn-sm" onclick="openCountdownAdd()">+ 添加重要日期</button>
+      <span style="font-size:11px;color:var(--text-mute);margin-left:8px">含农历 · 可设提醒</span>
+    </div>
+    ${items.length?`
+    <div class="grid grid-4">${items.map(x=>`
+      <div class="countdown-card ${x.left<=3?'urgent':x.left<=7?'soon':''}">
+        <div class="countdown-val">${x.left<0?'已过':x.left===0?'今天':x.left}</div>
+        <div class="countdown-name">${esc(x.name)}</div>
+        <div class="countdown-date">${x.date}${x.repeat?' · 每年':''}</div>
+        <div class="countdown-lunar">🌙 ${esc(x.lunar||'')}${x.repeat?'':' · '+esc(x.zodiac)+'年'}</div>
+        ${x.remind?`<div class="countdown-remind">🔔 ${x.remind===0?'当天提醒':x.remind+'天前提醒'}</div>`:''}
+        <div class="row-actions" style="margin-top:8px;justify-content:center">
+          <button class="icon-btn" onclick="editCountdown('${x.id}')">✏️</button>
+          <button class="icon-btn danger" onclick="deleteCountdown('${x.id}')">🗑</button>
+        </div>
+      </div>`).join('')}</div>`:`<div class="card"><div class="empty">还没有重要日期，点击添加</div></div>`}
+  `;
+}
+
+// 当天提醒检查（每天弹一次，仅对有 remind 设置的日期）
+let _lastRemindCheck = '';
+function checkCountdownReminders(){
+  const td = today();
+  if(_lastRemindCheck===td)return;
+  _lastRemindCheck = td;
+  state.data.countdown.forEach(x=>{
+    if(!x.remind && x.remind!==0)return;
+    const target = new Date(x.date+'T00:00:00');
+    const left = daysBetween(x.date);
+    if(left===x.remind || (x.remind===0 && left===0)){
+      // 尝试浏览器通知
+      if('Notification' in window && Notification.permission==='granted'){
+        new Notification('📅 '+x.name,{body:left===0?'就在今天！':`还有 ${left} 天`,icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%23ec4899"/><text x="50" y="65" text-anchor="middle" fill="white" font-size="40">📅</text></svg>'});
+      }
+      toast('🔔 '+x.name + (left===0?' · 就在今天！':' · 还有 '+left+' 天'));
+    }
+  });
+}
+// 首次加载请求通知权限
+if('Notification' in window && Notification.permission==='default'){
+  setTimeout(()=>Notification.requestPermission(),3000);
+}
+function openCountdownAdd(id){
+  const v=id?state.data.countdown.find(x=>x.id===id):{name:'',date:today(),repeat:false,remind:null};
+  const lunarPreview = (()=>{
+    const d = new Date((v.date||today())+'T00:00:00');
+    return lunarDateStr(d);
+  })();
+  openModal(`
+    <div class="modal-title">${id?'编辑':'添加'}重要日期</div>
+    <div class="form-row"><input id="m-name" placeholder="事件名称" value="${esc(v.name)}" autofocus></div>
+    <div class="form-row">
+      <input id="m-date" type="date" value="${v.date}" onchange="updateLunarPreview()">
+      <div id="lunar-preview" style="display:flex;align-items:center;padding:8px 12px;background:var(--pink-50);border-radius:var(--radius-sm);font-size:13px;color:var(--pink-600);white-space:nowrap">🌙 ${esc(lunarPreview)}</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 0">
+      <span class="switch ${v.repeat?'on':''}" id="m-repeat" onclick="this.classList.toggle('on')"></span>
+      <span style="font-size:13px">每年重复（适合生日、纪念日）</span>
+    </div>
+    <div class="form-group">
+      <div class="form-label">🔔 提醒设置</div>
+      <select id="m-remind" style="width:100%">
+        <option value="-1" ${(v.remind==null||v.remind===undefined)?'selected':''}>不提醒</option>
+        <option value="0" ${v.remind===0?'selected':''}>当天提醒</option>
+        <option value="1" ${v.remind===1?'selected':''}>提前 1 天提醒</option>
+        <option value="3" ${v.remind===3?'selected':''}>提前 3 天提醒</option>
+        <option value="7" ${v.remind===7?'selected':''}>提前 7 天提醒</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+      <button class="btn" onclick="saveCountdown('${id||''}')">保存</button>
+    </div>
+    <script>window.updateLunarPreview=function(){
+      const d=document.getElementById('m-date').value;
+      if(!d)return;
+      const dt=new Date(d+'T00:00:00');
+      const el=document.getElementById('lunar-preview');
+      if(el)el.textContent='🌙 '+lunarDateStr(dt);
+    }<\/script>
+  `);
+}
+function saveCountdown(id){
+  const name=$('#m-name').value.trim(),date=$('#m-date').value;
+  if(!name||!date){toast('请填写完整');return}
+  const repeat=$('#m-repeat').classList.contains('on');
+  const remindVal=parseInt($('#m-remind').value);
+  const remind=remindVal===-1?null:remindVal;
+  if(id){const x=state.data.countdown.find(c=>c.id===id);if(x){x.name=name;x.date=date;x.repeat=repeat;x.remind=remind}}
+  else{state.data.countdown.push({id:uid(),name,date,repeat,remind})}
+  saveState();closeModal();renderCountdown();renderOverview();toast('已保存');
+}
+function editCountdown(id){openCountdownAdd(id)}
+function deleteCountdown(id){
+  if(!confirm('确认删除？'))return;
+  state.data.countdown=state.data.countdown.filter(x=>x.id!==id);
+  saveState();renderCountdown();renderOverview();toast('已删除');
+}
+
+/* ─── 5. 阅读打卡 ─── */
+function renderReading(){
+  const c=$('#content-reading');const all=state.data.reading;
+  const reading=all.filter(b=>!b.done);const done=all.filter(b=>b.done);
+  c.innerHTML=`
+    <div class="toolbar">
+      <button class="btn btn-sm" onclick="openBookAdd()">+ 添加书籍</button>
+      <span class="tag tag-pink">在读 ${reading.length} · 已完成 ${done.length}</span>
+    </div>
+    ${reading.length?`<div class="card" style="margin-bottom:12px"><div class="card-title">📖 在读</div><div class="list">${reading.map(b=>bookRow(b)).join('')}</div></div>`:''}
+    ${done.length?`<div class="card"><div class="card-title">✅ 已完成 <button class="btn btn-ghost btn-sm" onclick="clearDoneBooks()">清空</button></div><div class="list">${done.map(b=>bookRow(b)).join('')}</div></div>`:''}
+    ${!all.length?`<div class="card"><div class="empty">还没有添加书籍</div></div>`:''}
+  `;
+}
+function bookRow(b){
+  const total=b.totalPages||100;
+  const pct=Math.min(100,Math.round((b.progress||0)/total*100));
+  return `<div class="book-row ${b.done?'done':''}">
+    <div>
+      <div style="font-weight:600">${esc(b.title)}</div>
+      <div style="font-size:11px;color:var(--text-mute)">${esc(b.author||'')}</div>
+      <div class="progress" style="margin-top:4px"><div class="progress-bar" style="width:${pct}%"></div></div>
+      <div style="font-size:10px;color:var(--text-mute);margin-top:2px">${b.progress||0}/${total} 页 (${pct}%)</div>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="addProgress('${b.id}',10)">+10</button>
+    <button class="btn btn-outline btn-sm" onclick="addProgress('${b.id}',1)">+1</button>
+    <button class="icon-btn" onclick="editBook('${b.id}')">✏️</button>
+    <div class="row-actions">
+      ${b.done?`<button class="icon-btn" onclick="toggleBookDone('${b.id}')" title="标记为在读">↩</button>`:`<button class="icon-btn" onclick="toggleBookDone('${b.id}')" title="标记完成">✓</button>`}
+      <button class="icon-btn danger" onclick="deleteBook('${b.id}')">🗑</button>
+    </div>
+  </div>`;
+}
+function openBookAdd(id){
+  const v=id?state.data.reading.find(x=>x.id===id):{title:'',author:'',totalPages:300,progress:0,done:false};
+  openModal(`
+    <div class="modal-title">${id?'编辑':'添加'}书籍</div>
+    <div class="form-row"><input id="m-title" placeholder="书名" value="${esc(v.title)}" autofocus></div>
+    <div class="form-row"><input id="m-author" placeholder="作者" value="${esc(v.author||'')}"><input id="m-total" type="number" placeholder="总页数" value="${v.totalPages||300}"></div>
+    ${id?`<div class="form-row"><input id="m-progress" type="number" placeholder="当前页" value="${v.progress||0}"></div>`:''}
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+      <button class="btn" onclick="saveBook('${id||''}')">保存</button>
+    </div>
+  `);
+}
+function saveBook(id){
+  const title=$('#m-title').value.trim(),author=$('#m-author').value.trim(),totalPages=parseInt($('#m-total').value)||300;
+  if(!title){toast('请填写书名');return}
+  if(id){const b=state.data.reading.find(x=>x.id===id);if(b){b.title=title;b.author=author;b.totalPages=totalPages;if($('#m-progress'))b.progress=parseInt($('#m-progress').value)||0}}
+  else{state.data.reading.push({id:uid(),title,author,totalPages,progress:0,done:false,addDate:today()})}
+  saveState();closeModal();renderReading();toast('已保存');
+}
+function editBook(id){openBookAdd(id)}
+function addProgress(id,n){const b=state.data.reading.find(x=>x.id===id);if(b){b.progress=Math.min(b.totalPages||9999,(b.progress||0)+n);saveState();renderReading();toast(`+${n}页`)}}
+function toggleBookDone(id){const b=state.data.reading.find(x=>x.id===id);if(b){b.done=!b.done;if(b.done)b.doneDate=today();saveState();renderReading();renderOverview()}}
+function deleteBook(id){if(!confirm('确认删除？'))return;state.data.reading=state.data.reading.filter(x=>x.id!==id);saveState();renderReading();renderOverview();toast('已删除')}
+function clearDoneBooks(){if(!confirm('清空已完成书籍？'))return;state.data.reading=state.data.reading.filter(x=>!x.done);saveState();renderReading();toast('已清空')}
+
+/* ─── 6. 健身打卡 ─── */
+function renderFitness(){
+  const c=$('#content-fitness');const tm=thisMonth();
+  const dim=daysInMonth(tm);
+  const [y,m]=tm.split('-').map(Number);
+  const now=new Date();
+  const todayIdx=now.getMonth()+1===m&&now.getFullYear()===y?now.getDate():0;
+
+  // 统计
+  const doneDays=[];for(let d=1;d<=dim;d++){const k=`${tm}-${String(d).padStart(2,'0')}`;if(state.data.fitness[k])doneDays.push(d)}
+  const doneCount=doneDays.length;
+
+  // 连续天数
+  let streak=0;
+  for(let d=todayIdx||dim;d>=1;d--){
+    const k=`${tm}-${String(d).padStart(2,'0')}`;
+    if(state.data.fitness[k])streak++;else break;
+  }
+
+  c.innerHTML=`
+    <div class="grid grid-3" style="margin-bottom:14px">
+      <div class="stat"><div class="stat-label">本月健身</div><div class="stat-value">${doneCount}/${dim}</div><div class="stat-sub">${dim?Math.round(doneCount/dim*100):0}% 完成率</div></div>
+      <div class="stat"><div class="stat-label">连续打卡</div><div class="stat-value">${streak}天</div><div class="stat-sub">🔥 继续加油</div></div>
+      <div class="stat"><div class="stat-label">今日状态</div><div class="stat-value">${state.data.fitness[today()]?'💪':'😴'}</div><div class="stat-sub">${state.data.fitness[today()]?'已完成':'还没打卡'}</div></div>
+    </div>
+
+    <div class="toolbar">
+      <button class="btn btn-sm" onclick="fitnessToggleToday()">${state.data.fitness[today()]?'取消今日打卡':'🏃 今日打卡'}</button>
+      <span style="font-size:12px;color:var(--text-mute)">${tm} 打卡日历</span>
+      <div style="flex:1"></div>
+      <button class="btn btn-ghost btn-sm" onclick="exportFitness()">导出Excel</button>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;flex-wrap:wrap;gap:4px">
+        ${Array.from({length:dim},(_,i)=>i+1).map(d=>{
+          const k=`${tm}-${String(d).padStart(2,'0')}`;
+          const done=state.data.fitness[k];
+          const isToday=d===todayIdx;
+          return `<div class="fitness-day ${done?'done':''}" onclick="fitnessToggle('${k}')" title="${k}${done?' ✓':''}">
+            <span style="font-size:10px;color:${isToday?'var(--pink-500)':'var(--text-mute)'};font-weight:${isToday?'700':'400'}">${['日','一','二','三','四','五','六'][new Date(y,m-1,d).getDay()]}</span>
+            <span class="d">${d}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="card-title">📝 健身项目记录</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+        ${['跑步','力量训练','瑜伽','游泳','骑行','跳绳','HIIT','拉伸','其他'].map(act=>`
+          <button class="pill ${state._fitAct===act?'active':''}" onclick="state._fitAct='${act}';renderFitness()">${act}</button>
+        `).join('')}
+      </div>
+      <div style="font-size:12px;color:var(--text-mute)">点击日历格子标记/取消打卡。建议每次记录具体项目和时长。</div>
+    </div>
+  `;
+}
+function fitnessToggle(key){
+  state.data.fitness[key]=!state.data.fitness[key];
+  saveState();renderFitness();renderOverview();toast(state.data.fitness[key]?'已打卡 ✅':'已取消');
+}
+function fitnessToggleToday(){
+  const k=today();
+  state.data.fitness[k]=!state.data.fitness[k];
+  saveState();renderFitness();renderOverview();toast(state.data.fitness[k]?'打卡成功 💪':'已取消');
+}
+function exportFitness(){
+  const rows=[['日期','是否打卡']];
+  Object.entries(state.data.fitness).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([k,v])=>{rows.push([k,v?'✓':'✗'])});
+  const ws=XLSX.utils.aoa_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'健身');
+  XLSX.writeFile(wb,`健身打卡-${today()}.xlsx`);toast('已导出');
+}
+
+/* ─── 7. 竞彩足球 ─── */
+function renderFootball(){
+  const c=$('#content-football');
+  const tm=thisMonth();
+  const monthData=state.data.football.filter(f=>f.date.startsWith(tm));
+  const win=monthData.filter(f=>f.result==='win').length;
+  const draw=monthData.filter(f=>f.result==='draw').length;
+  const lose=monthData.filter(f=>f.result==='lose').length;
+  const total=monthData.length;
+  const roi=monthData.reduce((s,f)=>s+(f.return||0)-(f.stake||0),0);
+  const totalStake=monthData.reduce((s,f)=>s+(f.stake||0),0);
+
+  // ── 竞猜正确率统计（仅统计有 guess 的）──
+  const guessedThisMonth = monthData.filter(f=>f.guess);
+  const correctThisMonth = guessedThisMonth.filter(f=>f.guess===f.result).length;
+  const guessRate = guessedThisMonth.length ? Math.round(correctThisMonth/guessedThisMonth.length*100) : null;
+
+  // 按月统计
+  const monthStats={};
+  state.data.football.forEach(f=>{
+    const ym=f.date.slice(0,7);
+    if(!monthStats[ym])monthStats[ym]={win:0,draw:0,lose:0,total:0,stake:0,ret:0,guess:0,correct:0};
+    monthStats[ym].total++;monthStats[ym][f.result]=(monthStats[ym][f.result]||0)+1;
+    monthStats[ym].stake+=(f.stake||0);monthStats[ym].ret+=(f.return||0);
+    if(f.guess){monthStats[ym].guess++;if(f.guess===f.result)monthStats[ym].correct++}
+  });
+
+  const allSorted=state.data.football.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,50);
+  const filterLeague=state._fbLeague||'all';
+  const showList=filterLeague==='all'?allSorted:allSorted.filter(f=>f.league===filterLeague);
+
+  c.innerHTML=`
+    <!-- 统计面板 -->
+    <div class="grid grid-5" style="margin-bottom:14px">
+      <div class="stat"><div class="stat-label">本月场次</div><div class="stat-value">${total}</div></div>
+      <div class="stat"><div class="stat-label">胜/平/负</div><div class="stat-value"><span style="color:#10b981">${win}</span>/<span style="color:#f59e0b">${draw}</span>/<span style="color:#ef4444">${lose}</span></div></div>
+      <div class="stat"><div class="stat-label">胜率</div><div class="stat-value">${total?Math.round(win/total*100):0}%</div></div>
+      <div class="stat"><div class="stat-label">竞猜正确率</div><div class="stat-value" style="color:${guessRate!=null?(guessRate>=50?'#10b981':'#ef4444'):'var(--text-mute)'}">${guessRate!=null?guessRate+'%':'-'}</div><div class="stat-sub">${guessedThisMonth.length}次竞猜</div></div>
+      <div class="stat"><div class="stat-label">本月盈亏</div><div class="stat-value" style="color:${roi>=0?'#10b981':'#ef4444'}">${roi>=0?'+':''}${roi.toFixed(0)}</div></div>
+    </div>
+
+    <!-- 实时赛事（中国体育彩票） -->
+    <div class="section-title">📡 实时赛事 <span style="font-weight:400;font-size:12px;color:var(--text-mute);margin-left:8px">数据来源：中国体育彩票竞彩网</span></div>
+    <div class="toolbar">
+      <button class="btn btn-sm" onclick="fetchLiveMatches()">🔄 刷新赛事</button>
+      <button class="btn btn-outline btn-sm" onclick="addMatchFromLive()">+ 添加选中的赛事到我的竞猜</button>
+      <span style="font-size:11px;color:var(--text-mute);margin-left:8px" id="fb-live-status"></span>
+    </div>
+    <div class="card" style="margin-bottom:12px;max-height:500px;overflow-y:auto">
+      <div id="fb-live-matches" style="font-size:13px;color:var(--text-mute);text-align:center;padding:20px">
+        点击「刷新赛事」获取最新比赛数据
+      </div>
+    </div>
+
+    <!-- 月度走势 -->
+    ${Object.keys(monthStats).length>1?`
+    <div class="card card-soft" style="margin-bottom:12px">
+      <div class="card-title">📈 月度走势</div>
+      <div style="display:flex;align-items:flex-end;gap:8px;height:120px;padding:10px 0">
+        ${Object.entries(monthStats).sort((a,b)=>a[0].localeCompare(b[0])).slice(-12).map(([ym,s])=>{
+          const h=Math.max(4,s.total*8);
+          const wr=s.total?Math.round(s.win/s.total*100):0;
+          const gr=s.guess?Math.round(s.correct/s.guess*100):null;
+          return `<div style="flex:1;text-align:center">
+            <div style="height:${h}px;background:linear-gradient(180deg,var(--pink-400),var(--rose-400));border-radius:6px 6px 0 0;margin-bottom:4px"></div>
+            <div style="font-size:10px;color:var(--text-mute)">${ym.slice(5)}</div>
+            <div style="font-size:9px;color:var(--pink-500);font-weight:600">${wr}%${gr!=null?' · 🎯'+gr+'%':''}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`:''}
+
+    <!-- 联赛筛选 -->
+    <div class="section-title">📋 我的竞猜记录</div>
+    <div class="toolbar">
+      <button class="btn btn-sm" onclick="openFBAdd()">+ 手动新增</button>
+      <span class="pill ${filterLeague==='all'?'active':''}" onclick="setFBLeague('all')">全部</span>
+      ${FB_LEAGUES.map(l=>`<span class="pill ${filterLeague===l?'active':''}" onclick="setFBLeague('${l}')">${l}</span>`).join('')}
+      <div style="flex:1"></div>
+      <button class="btn btn-ghost btn-sm" onclick="exportFootball()">导出Excel</button>
+    </div>
+
+    <div class="card">
+      ${showList.length?`
+      <table class="fb-table">
+        <thead><tr><th>日期</th><th>联赛</th><th>主队</th><th>比分</th><th>客队</th><th>竞猜</th><th>赛果</th><th>判定</th><th>投入</th><th>回报</th><th>操作</th></tr></thead>
+        <tbody>${showList.map(f=>{
+          const pnl=(f.return||0)-(f.stake||0);
+          const guessed=f.guess;
+          const correct=guessed===f.result;
+          return `<tr>
+            <td>${f.date}</td>
+            <td><span class="tag tag-gray">${esc(f.league||'')}</span></td>
+            <td>${esc(f.home||'')}</td>
+            <td>${f.homeScore!=null?`<strong>${f.homeScore}-${f.awayScore}</strong>`:'vs'}</td>
+            <td>${esc(f.away||'')}</td>
+            <td>${guessed?`<span class="tag ${guessed==='win'?'tag-success':guessed==='draw'?'tag-warn':'tag-danger'}">${guessed==='win'?'胜':guessed==='draw'?'平':'负'}</span>`:`<span style="color:var(--text-mute)">-</span>`}</td>
+            <td class="${f.result==='win'?'fb-win':f.result==='draw'?'fb-draw':'fb-lose'}">${f.result==='win'?'胜':f.result==='draw'?'平':'负'}</td>
+            <td>${guessed?`<span style="font-weight:600;color:${correct?'#10b981':'#ef4444'}">${correct?'✅':'❌'}</span>`:`-`}</td>
+            <td>${f.stake||0}</td>
+            <td>${f.return||0}</td>
+            <td><div class="row-actions">
+              <button class="icon-btn" onclick="editFB('${f.id}')">✏️</button>
+              <button class="icon-btn danger" onclick="deleteFB('${f.id}')">🗑</button>
+            </div></td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>`:`<div class="empty">还没有竞猜记录，点击「手动新增」或从上方赛事列表添加</div>`}
+    </div>
+  `;
+}
+function setFBLeague(l){state._fbLeague=l;renderFootball()}
+function openFBAdd(id){
+  const v=id?state.data.football.find(x=>x.id===id):{date:today(),league:'英超',home:'',away:'',homeScore:'',awayScore:'',result:'win',guess:null,stake:0,return:0};
+  openModal(`
+    <div class="modal-title">${id?'编辑':'新增'}竞彩记录</div>
+    <div class="form-row">
+      <input id="m-date" type="date" value="${v.date}">
+      <select id="m-league">${FB_LEAGUES.map(l=>`<option value="${l}" ${v.league===l?'selected':''}>${l}</option>`).join('')}</select>
+    </div>
+    <div class="form-row">
+      <input id="m-home" placeholder="主队" value="${esc(v.home||'')}">
+      <input id="m-away" placeholder="客队" value="${esc(v.away||'')}">
+    </div>
+    <div class="form-row">
+      <input id="m-homeScore" type="number" placeholder="主队比分" value="${v.homeScore!=null?v.homeScore:''}">
+      <input id="m-awayScore" type="number" placeholder="客队比分" value="${v.awayScore!=null?v.awayScore:''}">
+    </div>
+    <div class="form-group">
+      <div class="form-label">🎯 我的竞猜</div>
+      <select id="m-guess" style="width:100%">
+        <option value="" ${!v.guess?'selected':''}>未竞猜</option>
+        <option value="win" ${v.guess==='win'?'selected':''}>胜</option>
+        <option value="draw" ${v.guess==='draw'?'selected':''}>平</option>
+        <option value="lose" ${v.guess==='lose'?'selected':''}>负</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <div class="form-label">🏆 实际赛果</div>
+      <select id="m-result">
+        <option value="win" ${v.result==='win'?'selected':''}>胜</option>
+        <option value="draw" ${v.result==='draw'?'selected':''}>平</option>
+        <option value="lose" ${v.result==='lose'?'selected':''}>负</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <input id="m-stake" type="number" step="0.01" placeholder="投入金额" value="${v.stake||0}">
+      <input id="m-return" type="number" step="0.01" placeholder="回报金额" value="${v.return||0}">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+      <button class="btn" onclick="saveFB('${id||''}')">保存</button>
+    </div>
+  `);
+}
+function saveFB(id){
+  const guessVal=$('#m-guess').value;
+  const obj={
+    date:$('#m-date').value||today(),
+    league:$('#m-league').value,
+    home:$('#m-home').value.trim(),
+    away:$('#m-away').value.trim(),
+    homeScore:$('#m-homeScore').value!==''?parseInt($('#m-homeScore').value):null,
+    awayScore:$('#m-awayScore').value!==''?parseInt($('#m-awayScore').value):null,
+    guess:guessVal||null,
+    result:$('#m-result').value,
+    stake:parseFloat($('#m-stake').value)||0,
+    return:parseFloat($('#m-return').value)||0,
+  };
+  if(id){const f=state.data.football.find(x=>x.id===id);if(f)Object.assign(f,obj)}
+  else{state.data.football.unshift({id:uid(),...obj})}
+  saveState();closeModal();renderFootball();renderOverview();toast('已保存');
+}
+function editFB(id){openFBAdd(id)}
+function deleteFB(id){
+  if(!confirm('确认删除？'))return;
+  state.data.football=state.data.football.filter(x=>x.id!==id);
+  saveState();renderFootball();renderOverview();toast('已删除');
+}
+
+/* ─── 实时赛事拉取（中国体育彩票 500.com API） ─── */
+let _liveMatches = [];
+let _liveSelected = new Set();
+
+// 联赛名称映射
+const FB_LEAGUE_MAP = {
+  '英超':'英超','西甲':'西甲','意甲':'意甲','德甲':'德甲','法甲':'法甲',
+  '中超':'中超','日职':'日职','韩K':'韩K联','澳超':'澳超','美职':'美职',
+  '欧冠':'欧冠','欧罗巴':'欧罗巴','英冠':'英冠','荷甲':'荷甲','葡超':'葡超',
+};
+
+async function fetchLiveMatches(){
+  const statusEl = document.getElementById('fb-live-status');
+  const matchesEl = document.getElementById('fb-live-matches');
+  if(!statusEl||!matchesEl)return;
+  statusEl.textContent = '加载中...';
+  matchesEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-mute)">⏳ 正在获取比赛数据...</div>';
+
+  try{
+    // 使用 500.com 的 JSON 接口获取竞彩足球赛程
+    const resp = await fetch('https://trade.500.com/jczq/async.php?playtype=hhgg&callback=cb',{
+      headers:{'Accept':'application/json'}
+    });
+    const text = await resp.text();
+    // 提取 JSON（去除 callback 包裹）
+    const jsonMatch = text.match(/cb\(([\s\S]*)\)/);
+    if(!jsonMatch)throw new Error('解析失败');
+    const data = JSON.parse(jsonMatch[1]);
+    _liveMatches = [];
+
+    if(data&&data.data&&Array.isArray(data.data)){
+      data.data.forEach(item=>{
+        const league = FB_LEAGUE_MAP[item.lname] || item.lname || '';
+        const hscore = item.hscore!=null?parseInt(item.hscore):null;
+        const ascore = item.ascore!=null?parseInt(item.ascore):null;
+        let result = null;
+        if(hscore!=null&&ascore!=null){
+          if(hscore>ascore)result='win';
+          else if(hscore===ascore)result='draw';
+          else result='lose';
+        }
+        _liveMatches.push({
+          id:item.fid||item.id,
+          date:item.mdate||today(),
+          league,
+          home:item.hname||'',
+          away:item.aname||'',
+          homeScore:hscore,
+          awayScore:ascore,
+          result,
+          status:item.status||'',
+        });
+      });
+    }
+    renderLiveMatches();
+    statusEl.textContent = `✅ 共 ${_liveMatches.length} 场比赛`;
+  }catch(e){
+    console.warn('500.com API failed, trying backup...',e);
+    // 备用：使用静态模拟数据 + 提示
+    try{
+      await fetchBackupMatches();
+      statusEl.textContent = `⚠️ 离线数据（${_liveMatches.length}场），实时接口暂不可用`;
+    }catch(e2){
+      statusEl.textContent = '❌ 获取失败，请检查网络';
+      matchesEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-mute)">获取比赛数据失败，请稍后重试</div>';
+    }
+  }
+}
+
+async function fetchBackupMatches(){
+  // 备用接口：用 openligadb 或 football-data
+  const today = new Date();
+  const dateStr = today.toISOString().slice(0,10);
+  // 使用 500.com 的另一个接口
+  const resp = await fetch('https://live.500.com/static/json/live/live.json?'+Date.now(),{
+    headers:{'Accept':'application/json','Referer':'https://live.500.com/'}
+  });
+  const text = await resp.text();
+  try{
+    const data = JSON.parse(text);
+    _liveMatches = [];
+    if(data&&data.data){
+      data.data.forEach(item=>{
+        const league = FB_LEAGUE_MAP[item.lname] || item.lname || '';
+        _liveMatches.push({
+          id:item.fid||item.id,
+          date:item.mdate||dateStr,
+          league,
+          home:item.hname||'',
+          away:item.aname||'',
+          homeScore:item.hscore!=null?parseInt(item.hscore):null,
+          awayScore:item.ascore!=null?parseInt(item.ascore):null,
+          result:null,
+          status:item.status||'',
+        });
+      });
+    }
+    renderLiveMatches();
+  }catch(e){
+    throw e;
+  }
+}
+
+function renderLiveMatches(){
+  const el = document.getElementById('fb-live-matches');
+  if(!el)return;
+  _liveSelected = new Set();
+  if(!_liveMatches.length){
+    el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-mute)">暂无比赛数据</div>';
+    return;
+  }
+
+  el.innerHTML = `
+    <table class="fb-table">
+      <thead><tr>
+        <th style="width:30px"><input type="checkbox" onchange="toggleAllLive(this)" title="全选"></th>
+        <th>时间</th><th>联赛</th><th>主队</th><th>比分</th><th>客队</th><th>状态</th>
+        <th>快速竞猜</th>
+      </tr></thead>
+      <tbody>${_liveMatches.map((m,i)=>`
+        <tr>
+          <td><input type="checkbox" data-idx="${i}" onchange="toggleLiveMatch(this)" ${_liveSelected.has(i)?'checked':''}></td>
+          <td style="font-size:12px;color:var(--text-mute)">${(m.date||'').slice(-5)}</td>
+          <td><span class="tag tag-gray">${esc(m.league||'其他')}</span></td>
+          <td>${esc(m.home)}</td>
+          <td>${m.homeScore!=null?`<strong>${m.homeScore}-${m.awayScore}</strong>`:'vs'}</td>
+          <td>${esc(m.away)}</td>
+          <td>${m.status?`<span class="tag ${m.status==='完'?'tag-success':m.status.includes('中')?'tag-warn':'tag-info'}">${esc(m.status)}</span>`:`<span class="tag tag-gray">待开</span>`}</td>
+          <td>
+            <button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:11px;margin:1px" onclick="quickGuess('${i}','win')">胜</button>
+            <button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:11px;margin:1px" onclick="quickGuess('${i}','draw')">平</button>
+            <button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:11px;margin:1px" onclick="quickGuess('${i}','lose')">负</button>
+          </td>
+        </tr>`).join('')}</tbody>
+    </table>
+  `;
+}
+
+function toggleLiveMatch(cb){
+  const idx = parseInt(cb.dataset.idx);
+  if(cb.checked)_liveSelected.add(idx);else _liveSelected.delete(idx);
+}
+function toggleAllLive(cb){
+  if(cb.checked)_liveMatches.forEach((_,i)=>_liveSelected.add(i));
+  else _liveSelected.clear();
+  renderLiveMatches();
+}
+
+function quickGuess(idx,guess){
+  const m = _liveMatches[idx];
+  if(!m)return;
+  // 确定赛果
+  let result = 'win';
+  if(m.homeScore!=null&&m.awayScore!=null){
+    if(m.homeScore>m.awayScore)result='win';
+    else if(m.homeScore===m.awayScore)result='draw';
+    else result='lose';
+  }
+  state.data.football.unshift({
+    id:uid(),
+    date:m.date||today(),
+    league:m.league||'其他',
+    home:m.home,
+    away:m.away,
+    homeScore:m.homeScore,
+    awayScore:m.awayScore,
+    guess,
+    result,
+    stake:0,
+    return:0,
+  });
+  saveState();toast('已添加竞猜：'+m.home+' vs '+m.away+' ('+(guess==='win'?'胜':guess==='draw'?'平':'负')+')');
+}
+
+function addMatchFromLive(){
+  if(!_liveSelected.size){toast('请先勾选比赛');return}
+  let added = 0;
+  _liveSelected.forEach(idx=>{
+    const m = _liveMatches[idx];
+    if(!m)return;
+    let result = 'win';
+    if(m.homeScore!=null&&m.awayScore!=null){
+      if(m.homeScore>m.awayScore)result='win';
+      else if(m.homeScore===m.awayScore)result='draw';
+      else result='lose';
+    }
+    state.data.football.unshift({
+      id:uid(),
+      date:m.date||today(),
+      league:m.league||'其他',
+      home:m.home,
+      away:m.away,
+      homeScore:m.homeScore,
+      awayScore:m.awayScore,
+      guess:null,
+      result,
+      stake:0,
+      return:0,
+    });
+    added++;
+  });
+  saveState();renderFootball();renderOverview();toast(`已添加 ${added} 场比赛`);
+}
+function exportFootball(){
+  const rows=[['日期','联赛','主队','比分','客队','竞猜','赛果','判定','投入','回报','盈亏']];
+  state.data.football.forEach(f=>{
+    rows.push([
+      f.date,f.league||'',f.home||'',
+      f.homeScore!=null?`${f.homeScore}-${f.awayScore}`:'',
+      f.away||'',
+      f.guess?(f.guess==='win'?'胜':f.guess==='draw'?'平':'负'):'',
+      f.result==='win'?'胜':f.result==='draw'?'平':'负',
+      f.guess?(f.guess===f.result?'✓':'✗'):'',
+      f.stake||0,f.return||0,(f.return||0)-(f.stake||0)
+    ]);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'竞彩');
+  XLSX.writeFile(wb,`竞彩足球-${today()}.xlsx`);toast('已导出');
+}
+
+/* ─── 8. 选题灵感 ─── */
+function renderIdeas(){
+  const c=$('#content-ideas');
+  const all=state.data.ideas.slice().sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
+  const filterCat=state._ideaCat||'all';
+  const cats=['all',...new Set(all.map(i=>i.category).filter(Boolean))];
+  const list=filterCat==='all'?all:all.filter(i=>i.category===filterCat);
+
+  c.innerHTML=`
+    <div class="toolbar">
+      <button class="btn btn-sm" onclick="openIdeaAdd()">+ 添加灵感</button>
+      <button class="btn btn-outline btn-sm" onclick="pasteVideoLink()">📋 粘贴链接拆解</button>
+      <div style="flex:1"></div>
+      <button class="btn btn-ghost btn-sm" onclick="exportIdeas()">导出Excel</button>
+    </div>
+    ${cats.length>1?`<div class="toolbar">${cats.map(cat=>`<span class="pill ${filterCat===cat?'active':''}" onclick="setIdeaCat('${cat}')">${cat==='all'?'全部':esc(cat)}</span>`).join('')}</div>`:''}
+    <div class="card">
+      ${list.length?`<div class="list">${list.map(i=>`
+        <details class="bordered">
+          <summary>
+            <span style="font-weight:600">${esc(i.title)}</span>
+            ${i.category?`<span class="tag tag-pink" style="margin-left:6px">${esc(i.category)}</span>`:''}
+            <span style="float:right;font-size:11px;color:var(--text-mute)">${i.date}</span>
+          </summary>
+          <div style="font-size:13px;color:var(--text-soft);margin-top:6px;white-space:pre-wrap">${esc(i.content||'')}</div>
+          ${i.link?`<div style="margin-top:6px;font-size:12px">🔗 <a href="${esc(i.link)}" target="_blank">${esc(i.link)}</a></div>`:''}
+          ${i.tags&&i.tags.length?`<div style="margin-top:6px">${i.tags.map(t=>`<span class="hot-tag">#${esc(t)}</span>`).join('')}</div>`:''}
+          ${i.broken?`<details style="margin-top:6px"><summary style="font-size:12px;color:var(--text-mute);cursor:pointer">📑 视频爆点拆解</summary><div style="margin-top:6px;padding:8px;background:#fff;border-radius:8px;font-size:12px;white-space:pre-wrap;line-height:1.6">${esc(i.broken)}</div></details>`:''}
+          <div class="row-actions" style="margin-top:8px">
+            <button class="icon-btn" onclick="editIdea('${i.id}')">✏️</button>
+            <button class="icon-btn" onclick="toScriptFromIdea('${i.id}')" title="转为脚本">📝</button>
+            <button class="icon-btn danger" onclick="deleteIdea('${i.id}')">🗑</button>
+          </div>
+        </details>`).join('')}</div>`:`<div class="empty">还没有灵感素材</div>`}
+    </div>
+  `;
+}
+function setIdeaCat(c){state._ideaCat=c;renderIdeas()}
+function openIdeaAdd(id){
+  const v=id?state.data.ideas.find(x=>x.id===id):{title:'',content:'',category:'',tags:[],link:'',broken:''};
+  openModal(`
+    <div class="modal-title">${id?'编辑':'添加'}灵感素材</div>
+    <div class="form-row"><input id="m-title" placeholder="标题" value="${esc(v.title)}" autofocus><input id="m-cat" placeholder="分类" value="${esc(v.category||'')}"></div>
+    <div class="form-group"><textarea id="m-content" placeholder="灵感描述 / 核心创意点">${esc(v.content||'')}</textarea></div>
+    <div class="form-row"><input id="m-link" placeholder="参考链接" value="${esc(v.link||'')}"><input id="m-tags" placeholder="标签，逗号分隔" value="${esc((v.tags||[]).join(','))}"></div>
+    <div class="form-group"><textarea id="m-broken" placeholder="视频爆点拆解（可选）">${esc(v.broken||'')}</textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+      <button class="btn" onclick="saveIdea('${id||''}')">保存</button>
+    </div>
+  `);
+}
+function saveIdea(id){
+  const title=$('#m-title').value.trim();
+  if(!title){toast('请填写标题');return}
+  const obj={
+    title,category:$('#m-cat').value.trim(),content:$('#m-content').value.trim(),
+    link:$('#m-link').value.trim(),tags:$('#m-tags').value.split(',').map(s=>s.trim()).filter(Boolean),
+    broken:$('#m-broken').value.trim(),
+    date:id?(state.data.ideas.find(x=>x.id===id)||{}).date:today(),
+    time:id?(state.data.ideas.find(x=>x.id===id)||{}).time:fmtTime(new Date()),
+  };
+  if(id){const i=state.data.ideas.find(x=>x.id===id);if(i)Object.assign(i,obj)}
+  else{state.data.ideas.unshift({id:uid(),...obj})}
+  saveState();closeModal();renderIdeas();renderOverview();toast('已保存');
+}
+function editIdea(id){openIdeaAdd(id)}
+function deleteIdea(id){
+  if(!confirm('确认删除？'))return;
+  state.data.ideas=state.data.ideas.filter(x=>x.id!==id);
+  saveState();renderIdeas();renderOverview();toast('已删除');
+}
+function pasteVideoLink(){
+  const link=prompt('粘贴短视频链接（抖音/快手/B站等）：');
+  if(!link)return;
+  const id=uid();const now=new Date();
+  state.data.ideas.unshift({
+    id,title:`爆款拆解 - ${link.slice(0,30)}...`,content:'待补充内容',
+    category:'拆解',tags:['爆款拆解'],link,
+    broken:`【视频爆点拆解模板】
+
+🎯 标题钩子：
+
+📌 前3秒留人点：
+
+💥 中间节奏点（每5-8秒一个爆点）：
+· 第1爆点：
+· 第2爆点：
+· 第3爆点：
+
+🔥 结尾互动设计：
+
+🎨 视觉/音乐亮点：
+
+📊 选题切入角度：
+
+💡 可改编方向：
+1.
+2.
+3.
+
+⏰ 建议发布时间：
+`,
+    date:today(),time:fmtTime(now),
+  });
+  saveState();renderIdeas();renderOverview();
+  toast('已创建，请编辑补充');
+}
+function toScriptFromIdea(id){
+  const idea=state.data.ideas.find(i=>i.id===id);
+  if(!idea)return;
+  switchModule('script');
+  setTimeout(()=>openScriptAdd({title:`基于「${idea.title}」改编`,content:`选题来源：${idea.title}\n核心创意：${idea.content||''}\n爆点参考：${idea.broken||''}\n\n【口播脚本框架】\n\n开头钩子（前3秒）：\n\n引入冲突：\n\n核心观点1：\n\n核心观点2：\n\n反转/高潮：\n\n结尾互动：\n`,tags:idea.tags||[]}),100);
+}
+function exportIdeas(){
+  const rows=[['日期','分类','标题','标签','链接','内容','爆点拆解']];
+  state.data.ideas.forEach(i=>{rows.push([i.date,i.category||'',i.title,(i.tags||[]).join(','),i.link||'',i.content||'',i.broken||''])});
+  const ws=XLSX.utils.aoa_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'选题');
+  XLSX.writeFile(wb,`选题灵感-${today()}.xlsx`);toast('已导出');
+}
+
+/* ─── 9. 脚本创作库 ─── */
+function renderScript(){
+  const c=$('#content-script');
+  const all=state.data.scripts.slice().sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
+  c.innerHTML=`
+    <div class="toolbar">
+      <button class="btn btn-sm" onclick="openScriptAdd()">+ 新建脚本</button>
+      <button class="btn btn-outline btn-sm" onclick="generateTitle()">🎯 标题生成器</button>
+      <button class="btn btn-outline btn-sm" onclick="rewriteCopy()">✍️ 文案改写</button>
+      <button class="btn btn-outline btn-sm" onclick="generateTags()">🏷️ 标签生成</button>
+      <div style="flex:1"></div>
+      <button class="btn btn-ghost btn-sm" onclick="exportScripts()">导出Excel</button>
+    </div>
+    <div class="card">
+      ${all.length?`<div class="list">${all.map(s=>`
+        <details class="bordered">
+          <summary>
+            <span style="font-weight:600">${esc(s.title)}</span>
+            ${s.tags&&s.tags.length?`<span style="margin-left:6px">${s.tags.slice(0,3).map(t=>`<span class="hot-tag">#${esc(t)}</span>`).join('')}</span>`:''}
+            <span style="float:right;font-size:11px;color:var(--text-mute)">${s.date} · ${(s.content||'').length}字</span>
+          </summary>
+          <div style="font-size:13px;color:var(--text-soft);margin-top:6px;white-space:pre-wrap;font-family:monospace;line-height:1.6">${esc(s.content||'')}</div>
+          <div class="row-actions" style="margin-top:8px">
+            <button class="icon-btn" onclick="editScript('${s.id}')">✏️</button>
+            <button class="icon-btn" onclick="copyScript('${s.id}')">📋 复制</button>
+            <button class="icon-btn danger" onclick="deleteScript('${s.id}')">🗑</button>
+          </div>
+        </details>`).join('')}</div>`:`<div class="empty">还没有脚本</div>`}
+    </div>
+    <div class="card" style="margin-top:12px">
+      <div class="card-title">📚 脚本模板（点击使用）</div>
+      <div class="grid grid-2">${SCRIPT_TEMPLATES.map((t,i)=>`
+        <div class="card" style="cursor:pointer;background:var(--pink-50);border:1px solid var(--pink-100)" onclick="useTemplate(${i})">
+          <div style="font-weight:600;margin-bottom:4px">${t.icon} ${esc(t.name)}</div>
+          <div style="font-size:12px;color:var(--text-mute)">${esc(t.desc)}</div>
+        </div>`).join('')}</div>
+    </div>
+  `;
+}
+function useTemplate(i){const t=SCRIPT_TEMPLATES[i];openScriptAdd({title:t.name,content:t.tpl,tags:(t.tpl.match(/#[\u4e00-\u9fa5a-zA-Z]+/g)||[])})}
+function openScriptAdd(prefill){
+  const id=prefill&&prefill.id;
+  const v=id?state.data.scripts.find(x=>x.id===id):(prefill||{title:'',content:'',tags:[]});
+  openModal(`
+    <div class="modal-title">${id?'编辑':'新建'}脚本</div>
+    <div class="form-row"><input id="m-title" placeholder="脚本标题" value="${esc(v.title)}" autofocus></div>
+    <div class="form-group"><textarea id="m-content" class="script" placeholder="脚本内容（口播稿）..." style="min-height:240px">${esc(v.content||'')}</textarea></div>
+    <div class="form-row"><input id="m-tags" placeholder="标签，逗号分隔" value="${esc((v.tags||[]).join(','))}"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+      <button class="btn" onclick="saveScript('${id||''}')">保存</button>
+    </div>
+  `);
+}
+function saveScript(id){
+  const title=$('#m-title').value.trim();
+  if(!title){toast('请填写标题');return}
+  const obj={
+    title,content:$('#m-content').value,
+    tags:$('#m-tags').value.split(',').map(s=>s.trim()).filter(Boolean),
+    date:id?(state.data.scripts.find(x=>x.id===id)||{}).date:today(),
+    time:id?(state.data.scripts.find(x=>x.id===id)||{}).time:fmtTime(new Date()),
+  };
+  if(id){const s=state.data.scripts.find(x=>x.id===id);if(s)Object.assign(s,obj)}
+  else{state.data.scripts.unshift({id:uid(),...obj})}
+  saveState();closeModal();renderScript();renderOverview();toast('已保存');
+}
+function editScript(id){openScriptAdd({id})}
+function deleteScript(id){
+  if(!confirm('确认删除？'))return;
+  state.data.scripts=state.data.scripts.filter(x=>x.id!==id);
+  saveState();renderScript();renderOverview();toast('已删除');
+}
+function copyScript(id){
+  const s=state.data.scripts.find(x=>x.id===id);
+  if(s){navigator.clipboard.writeText(s.content).then(()=>toast('已复制')).catch(()=>toast('复制失败'))}
+}
+function exportScripts(){
+  const rows=[['日期','标题','标签','字数','脚本内容']];
+  state.data.scripts.forEach(s=>{rows.push([s.date,s.title,(s.tags||[]).join(','),(s.content||'').length,s.content||''])});
+  const ws=XLSX.utils.aoa_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'脚本');
+  XLSX.writeFile(wb,`脚本库-${today()}.xlsx`);toast('已导出');
+}
+
+function generateTitle(){
+  const topic=prompt('请输入主题关键词：');
+  if(!topic)return;
+  const titles=TITLE_PATTERNS.map(p=>p(topic));
+  openModal(`
+    <div class="modal-title">🎯 标题生成器</div>
+    <div style="background:var(--pink-50);padding:10px;border-radius:var(--radius-sm);margin-bottom:12px;font-size:13px">主题：<strong>${esc(topic)}</strong></div>
+    <div class="list">${titles.map(t=>`<div class="list-item"><div class="title">${esc(t)}</div><button class="icon-btn" onclick="navigator.clipboard.writeText('${esc(t).replace(/'/g,"\\'")}');toast('已复制')">📋</button></div>`).join('')}</div>
+    <div style="margin-top:12px;display:flex;gap:8px"><input id="regen" placeholder="调整关键词重新生成" value="${esc(topic)}"><button class="btn btn-sm" onclick="regenerateTitles()">重新生成</button></div>
+  `);
+}
+function regenerateTitles(){const t=$('#regen').value.trim();if(t){generateTitle();setTimeout(()=>{$('#regen').value=t},50)}}
+
+const TAG_POOL=['#干货分享','#生活技巧','#实用','#建议收藏','#涨知识','#冷知识','#科普','#避坑指南','#经验分享','#新人必看','#深度好文','#思考','#观点','#感悟','#成长','#自律','#效率','#自我提升','#情绪管理','#情感','#共鸣','#真实','#励志','#正能量','#治愈','#搞笑','#反转','#惊喜','#挑战','#日常'];
+function generateTags(){
+  const text=prompt('粘贴文案/选题内容：');
+  if(!text)return;
+  const picked=[];
+  const kwMap={'学习':'#学习','读书':'#阅读','工作':'#职场','钱':'#理财','感情':'#情感','吃':'#美食','旅行':'#旅行','健身':'#健身','孩子':'#育儿','减肥':'#减肥','穿搭':'#穿搭','美妆':'#美妆'};
+  Object.entries(kwMap).forEach(([k,tag])=>{if(text.includes(k)&&!picked.includes(tag))picked.push(tag)});
+  while(picked.length<8){const r=TAG_POOL[Math.floor(Math.random()*TAG_POOL.length)];if(!picked.includes(r))picked.push(r)}
+  openModal(`
+    <div class="modal-title">🏷️ 标签生成</div>
+    <div class="list">${picked.map(t=>`<div class="list-item"><div class="title">${t}</div><button class="icon-btn" onclick="navigator.clipboard.writeText('${t}');toast('已复制')">📋</button></div>`).join('')}</div>
+    <div class="modal-actions"><button class="btn" onclick="navigator.clipboard.writeText('${picked.join(' ')}');toast('已全部复制')">复制全部</button></div>
+  `);
+}
+
+function rewriteCopy(){
+  const text=prompt('粘贴需要改写的文案：');
+  if(!text)return;
+  const sentences=text.split(/[。！？\n]/).filter(s=>s.trim());
+  const variations=[s=>s.replace(/很/g,'非常'),s=>`说到${s}，其实还有更深层的意义`,s=>`${s} —— 这背后的逻辑值得深思`];
+  const out=sentences.slice(0,3).map((s,i)=>`【改写${i+1}】\n${variations[i%variations.length](s)}。`).join('\n\n');
+  openModal(`
+    <div class="modal-title">✍️ 文案改写</div>
+    <div style="font-size:12px;color:var(--text-mute);margin-bottom:8px">原文：${esc(text.slice(0,80))}${text.length>80?'...':''}</div>
+    <textarea class="script" style="min-height:180px;width:100%" readonly>${esc(out)}</textarea>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">关闭</button>
+      <button class="btn" onclick="navigator.clipboard.writeText(document.querySelector('#modal-content textarea').value);toast('已复制')">复制结果</button>
+    </div>
+  `);
+}
+
+/* ─── 10. 数据复盘 ─── */
+function renderReview(){
+  const c=$('#content-review');const all=state.data.reviews.slice().sort((a,b)=>b.period.localeCompare(a.period));
+  c.innerHTML=`
+    <div class="toolbar">
+      <button class="btn btn-sm" onclick="openReviewAdd()">+ 新建复盘</button>
+      <span class="tag tag-pink">共 ${all.length} 篇</span>
+    </div>
+    ${all.length?`<div class="list">${all.map(r=>`
+      <details class="bordered">
+        <summary>
+          <span style="font-weight:600">${esc(r.title||r.period)}</span>
+          <span style="float:right;font-size:11px;color:var(--text-mute)">${r.period}</span>
+        </summary>
+        <div style="margin-top:10px">
+          <div style="background:var(--info-bg);padding:10px;border-radius:8px;margin-bottom:8px">
+            <div style="font-weight:600;color:#1e40af;margin-bottom:4px">📊 数据记录</div>
+            <div style="white-space:pre-wrap;font-size:13px">${esc(r.data||'')}</div>
+          </div>
+          <div style="background:var(--success-bg);padding:10px;border-radius:8px;margin-bottom:8px">
+            <div style="font-weight:600;color:#166534;margin-bottom:4px">💪 优点</div>
+            <div style="white-space:pre-wrap;font-size:13px">${esc(r.pros||'')}</div>
+          </div>
+          <div style="background:var(--danger-bg);padding:10px;border-radius:8px;margin-bottom:8px">
+            <div style="font-weight:600;color:#991b1b;margin-bottom:4px">⚠️ 不足</div>
+            <div style="white-space:pre-wrap;font-size:13px">${esc(r.cons||'')}</div>
+          </div>
+          <div style="background:var(--pink-50);padding:10px;border-radius:8px">
+            <div style="font-weight:600;color:var(--pink-600);margin-bottom:4px">🚀 优化方案</div>
+            <div style="white-space:pre-wrap;font-size:13px">${esc(r.plan||'')}</div>
+          </div>
+          <div class="row-actions" style="margin-top:8px">
+            <button class="icon-btn" onclick="editReview('${r.id}')">✏️</button>
+            <button class="icon-btn danger" onclick="deleteReview('${r.id}')">🗑</button>
+          </div>
+        </div>
+      </details>`).join('')}</div>`:`<div class="card"><div class="empty">还没有复盘记录，建议每周/每月做一次</div></div>`}
+    <div class="card" style="margin-top:12px"><div class="card-title">⚡ 自动统计</div>${renderAutoStats()}</div>
+  `;
+}
+function renderAutoStats(){
+  const tm=thisMonth();
+  const monthDone=state.data.todo.filter(t=>t.date&&t.date.startsWith(tm)&&t.done).length;
+  const monthExp=state.data.finance.filter(f=>f.date&&f.date.startsWith(tm)&&f.type==='expense').reduce((s,f)=>s+Number(f.amount||0),0);
+  const monthIdeas=state.data.ideas.filter(i=>i.date&&i.date.startsWith(tm)).length;
+  const monthScripts=state.data.scripts.filter(s=>s.date&&s.date.startsWith(tm)).length;
+  const monthReading=state.data.reading.filter(b=>b.doneDate&&b.doneDate.startsWith(tm)).length;
+  const monthFit=Object.keys(state.data.fitness).filter(k=>k.startsWith(tm)&&state.data.fitness[k]).length;
+  return `
+    <div class="grid grid-5">
+      <div class="stat"><div class="stat-label">完成任务</div><div class="stat-value">${monthDone}</div></div>
+      <div class="stat"><div class="stat-label">支出</div><div class="stat-value">¥${monthExp.toFixed(0)}</div></div>
+      <div class="stat"><div class="stat-label">灵感/脚本</div><div class="stat-value">${monthIdeas}/${monthScripts}</div></div>
+      <div class="stat"><div class="stat-label">读完书</div><div class="stat-value">${monthReading}</div></div>
+      <div class="stat"><div class="stat-label">健身</div><div class="stat-value">${monthFit}天</div></div>
+    </div>
+  `;
+}
+function openReviewAdd(id){
+  const v=id?state.data.reviews.find(x=>x.id===id):{title:'',period:today().slice(0,7),data:'',pros:'',cons:'',plan:''};
+  openModal(`
+    <div class="modal-title">${id?'编辑':'新建'}复盘</div>
+    <div class="form-row"><input id="m-title" placeholder="复盘标题" value="${esc(v.title||'')}"><input id="m-period" type="month" value="${esc(v.period)}"></div>
+    <div class="form-group"><div class="form-label">📊 数据记录</div><textarea id="m-data" placeholder="粉丝数、播放量、收益等">${esc(v.data||'')}</textarea></div>
+    <div class="form-group"><div class="form-label">💪 优点</div><textarea id="m-pros" placeholder="做得好的地方">${esc(v.pros||'')}</textarea></div>
+    <div class="form-group"><div class="form-label">⚠️ 不足</div><textarea id="m-cons" placeholder="需要改进的地方">${esc(v.cons||'')}</textarea></div>
+    <div class="form-group"><div class="form-label">🚀 优化方案</div><textarea id="m-plan" placeholder="下一步行动方案">${esc(v.plan||'')}</textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+      <button class="btn" onclick="saveReview('${id||''}')">保存</button>
+    </div>
+  `);
+}
+function saveReview(id){
+  const obj={title:$('#m-title').value.trim(),period:$('#m-period').value,data:$('#m-data').value,pros:$('#m-pros').value,cons:$('#m-cons').value,plan:$('#m-plan').value};
+  if(!obj.title){toast('请填写标题');return}
+  if(id){const r=state.data.reviews.find(x=>x.id===id);if(r)Object.assign(r,obj)}
+  else{state.data.reviews.unshift({id:uid(),...obj})}
+  saveState();closeModal();renderReview();toast('已保存');
+}
+function editReview(id){openReviewAdd(id)}
+function deleteReview(id){
+  if(!confirm('确认删除？'))return;
+  state.data.reviews=state.data.reviews.filter(x=>x.id!==id);
+  saveState();renderReview();toast('已删除');
+}
+
+/* ─── 11. 热点雷达 ─── */
+function renderHotspot(){
+  const c=$('#content-hotspot');
+  const all=state.data.hotspots.slice().sort((a,b)=>b.date.localeCompare(a.date));
+  c.innerHTML=`
+    <div class="toolbar">
+      <button class="btn btn-sm" onclick="openHotspotAdd()">+ 手动记录</button>
+      <button class="btn btn-outline btn-sm" onclick="importHotspots()">📋 批量导入</button>
+      <div style="flex:1"></div>
+      <button class="btn btn-ghost btn-sm" onclick="exportHotspots()">导出</button>
+    </div>
+    <div class="card card-soft" style="margin-bottom:12px;font-size:13px">
+      💡 <strong>使用建议</strong>：每天花 5-10 分钟浏览微博/抖音/B站/小红书热门榜，把适合你账号方向的选题记录下来，标注<strong>热度</strong>和<strong>切入点</strong>。
+    </div>
+    ${all.length?`<div class="list">${all.map(h=>`
+      <div class="heat-item">
+        <div class="heat-title">🔥 ${esc(h.title)}</div>
+        <div style="font-size:12px;color:var(--text-mute);margin-bottom:6px">
+          ${h.platform?`<span class="tag tag-info">${esc(h.platform)}</span>`:''}
+          ${h.heat?`<span class="tag tag-orange">热度 ${h.heat}/10</span>`:''}
+          <span style="margin-left:6px">${h.date}</span>
+        </div>
+        ${h.angle?`<div style="font-size:13px;color:var(--text-soft);margin-bottom:6px"><strong>切入角度：</strong>${esc(h.angle)}</div>`:''}
+        ${h.tags&&h.tags.length?`<div style="margin-bottom:6px">${h.tags.map(t=>`<span class="hot-tag">#${esc(t)}</span>`).join('')}</div>`:''}
+        ${h.link?`<div style="font-size:12px">🔗 <a href="${esc(h.link)}" target="_blank">${esc(h.link)}</a></div>`:''}
+        <div class="row-actions" style="margin-top:8px">
+          <button class="icon-btn" onclick="hotspotToIdea('${h.id}')" title="转选题">💡</button>
+          <button class="icon-btn" onclick="editHotspot('${h.id}')">✏️</button>
+          <button class="icon-btn danger" onclick="deleteHotspot('${h.id}')">🗑</button>
+        </div>
+      </div>`).join('')}</div>`:`<div class="card"><div class="empty">还没有热点记录</div></div>`}
+  `;
+}
+function openHotspotAdd(id){
+  const v=id?state.data.hotspots.find(x=>x.id===id):{title:'',platform:'',heat:5,angle:'',tags:[],link:''};
+  openModal(`
+    <div class="modal-title">${id?'编辑':'新增'}热点</div>
+    <div class="form-row">
+      <input id="m-title" placeholder="热点标题" value="${esc(v.title)}" autofocus>
+      <select id="m-platform"><option value="">选择平台</option>${['微博','抖音','快手','小红书','B站','知乎','头条'].map(p=>`<option value="${p}" ${v.platform===p?'selected':''}>${p}</option>`).join('')}</select>
+    </div>
+    <div class="form-row"><input id="m-heat" type="number" min="1" max="10" placeholder="热度 1-10" value="${v.heat||5}"><input id="m-tags" placeholder="标签" value="${esc((v.tags||[]).join(','))}"></div>
+    <div class="form-group"><textarea id="m-angle" placeholder="切入角度">${esc(v.angle||'')}</textarea></div>
+    <div class="form-row"><input id="m-link" placeholder="链接" value="${esc(v.link||'')}"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+      <button class="btn" onclick="saveHotspot('${id||''}')">保存</button>
+    </div>
+  `);
+}
+function saveHotspot(id){
+  const title=$('#m-title').value.trim();
+  if(!title){toast('请填写标题');return}
+  const obj={
+    title,platform:$('#m-platform').value,heat:parseInt($('#m-heat').value)||5,
+    angle:$('#m-angle').value,tags:$('#m-tags').value.split(',').map(s=>s.trim()).filter(Boolean),
+    link:$('#m-link').value.trim(),date:id?(state.data.hotspots.find(x=>x.id===id)||{}).date:today(),
+  };
+  if(id){const h=state.data.hotspots.find(x=>x.id===id);if(h)Object.assign(h,obj)}
+  else{state.data.hotspots.unshift({id:uid(),...obj})}
+  saveState();closeModal();renderHotspot();toast('已保存');
+}
+function editHotspot(id){openHotspotAdd(id)}
+function deleteHotspot(id){
+  if(!confirm('确认删除？'))return;
+  state.data.hotspots=state.data.hotspots.filter(x=>x.id!==id);
+  saveState();renderHotspot();toast('已删除');
+}
+function hotspotToIdea(id){
+  const h=state.data.hotspots.find(x=>x.id===id);
+  if(!h)return;
+  state.data.ideas.unshift({id:uid(),title:`热点选题 - ${h.title}`,category:'热点改编',content:h.angle||'',tags:h.tags||[],link:h.link||'',broken:'',date:today(),time:fmtTime(new Date())});
+  saveState();renderIdeas();switchModule('ideas');toast('已转为选题灵感');
+}
+function importHotspots(){
+  const text=prompt('批量导入（每行：标题|平台|热度|切入角度|标签|链接）');
+  if(!text)return;
+  const lines=text.split('\n').filter(l=>l.trim());let added=0;
+  lines.forEach(line=>{
+    const parts=line.split('|').map(s=>s.trim());
+    if(!parts[0])return;
+    state.data.hotspots.unshift({id:uid(),title:parts[0],platform:parts[1]||'',heat:parseInt(parts[2])||5,angle:parts[3]||'',tags:parts[4]?parts[4].split(',').map(s=>s.trim()).filter(Boolean):[],link:parts[5]||'',date:today()});
+    added++;
+  });
+  saveState();renderHotspot();toast(`已导入 ${added} 条`);
+}
+function exportHotspots(){
+  const rows=[['日期','平台','标题','热度','角度','标签','链接']];
+  state.data.hotspots.forEach(h=>{rows.push([h.date,h.platform||'',h.title,h.heat||'',h.angle||'',(h.tags||[]).join(','),h.link||''])});
+  const ws=XLSX.utils.aoa_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'热点');
+  XLSX.writeFile(wb,`热点雷达-${today()}.xlsx`);toast('已导出');
+}
+
+/* ─── 12. 设置 ─── */
+function renderSettings(){
+  const c=$('#content-settings');
+  c.innerHTML=`
+    <div class="card">
+      <div class="card-title">📦 模块管理</div>
+      <div style="font-size:12px;color:var(--text-mute);margin-bottom:10px">关闭不需要的模块，简化你的工作台。点击名称可直接改名。</div>
+      <div class="list">${state.modules.map(m=>`
+        <div class="list-item">
+          <span style="font-size:18px">${m.icon}</span>
+          <div class="title">
+            <input data-mid="${m.id}" value="${esc(m.name)}" onchange="renameModule('${m.id}',this.value)" style="font-weight:500;border:none;background:transparent;padding:0">
+            <div style="font-size:11px;color:var(--text-mute)">分组：${esc(m.group)}</div>
+          </div>
+          <span class="switch ${m.enabled?'on':''}" onclick="toggleModule('${m.id}')"></span>
+        </div>`).join('')}</div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <div class="card-title">💾 数据管理</div>
+      <div class="toolbar">
+        <button class="btn btn-sm" onclick="exportAll()">📤 备份全部 (JSON)</button>
+        <button class="btn btn-outline btn-sm" onclick="document.getElementById('import-file').click()">📥 恢复数据</button>
+        <input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImport(event)">
+        <button class="btn btn-outline btn-sm" onclick="exportExcelAll()">📊 导出 Excel</button>
+        <button class="btn btn-sm btn-danger" onclick="clearAllData()">🗑 清空所有</button>
+      </div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <div class="card-title">ℹ️ 关于</div>
+      <div style="font-size:13px;color:var(--text-soft);line-height:1.8">
+        <p>🌸 <strong>小何根据地</strong> v2.0</p>
+        <p>📦 单 HTML 文件 + localStorage 本地存储，零网络依赖</p>
+        <p>📱 可部署到 GitHub Pages，手机加入主屏幕当 App 使用</p>
+        <p>🎀 粉色系主题，模块可自定义开关与名称</p>
+        <p>⚽ 包含竞彩足球板块 · 💪 包含健身打卡记录</p>
+      </div>
+    </div>
+  `;
+}
+function renameModule(id,name){
+  const m=state.modules.find(x=>x.id===id);
+  if(m){m.name=name.trim()||m.name;saveState();renderNav();renderOverview()}
+}
+function toggleModule(id){
+  const m=state.modules.find(x=>x.id===id);
+  if(m){m.enabled=!m.enabled;saveState();renderAllModules();renderNav()}
+}
+function clearAllData(){
+  if(!confirm('确认清空所有数据？此操作不可恢复！'))return;
+  if(!confirm('再次确认：真的要清空吗？'))return;
+  localStorage.removeItem(STORE_KEY);state=loadState();renderAllModules();renderNav();toast('已清空');
+}
+
+/* ─── Import/Export ─── */
+function exportAll(){
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=`小何根据地-备份-${today()}.json`;a.click();URL.revokeObjectURL(url);toast('已导出备份');
+}
+function importAll(){document.getElementById('import-file').click()}
+function handleImport(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const parsed=JSON.parse(ev.target.result);
+      if(parsed.modules&&parsed.data){state=parsed;saveState();renderAllModules();renderNav();toast('已恢复')}
+      else{toast('文件格式错误')}
+    }catch(err){toast('解析失败')}
+  };
+  reader.readAsText(file);e.target.value='';
+}
+function exportExcelAll(){
+  const wb=XLSX.utils.book_new();
+  const addSheet=(name,rows)=>{XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),name)};
+  addSheet('待办',[['日期','内容','优先级','状态']].concat(state.data.todo.map(t=>[t.date,t.text,t.priority,t.done?'已完成':'未完成'])));
+  addSheet('记账',[['日期','类型','分类','金额','备注']].concat(state.data.finance.map(f=>[f.date,f.type,f.category,f.amount,f.note||''])));
+  addSheet('阅读',[['书名','作者','总页数','当前页','状态']].concat(state.data.reading.map(b=>[b.title,b.author||'',b.totalPages,b.progress,b.done?'已完成':'在读'])));
+  addSheet('灵感',[['日期','分类','标题','标签','内容']].concat(state.data.ideas.map(i=>[i.date,i.category||'',i.title,(i.tags||[]).join(','),i.content||''])));
+  addSheet('脚本',[['日期','标题','标签','字数','内容']].concat(state.data.scripts.map(s=>[s.date,s.title,(s.tags||[]).join(','),(s.content||'').length,s.content||''])));
+  addSheet('重要日期',[['事件','日期','每年重复']].concat(state.data.countdown.map(c=>[c.name,c.date,c.repeat?'是':'否'])));
+  addSheet('热点',[['日期','平台','标题','热度','角度','标签']].concat(state.data.hotspots.map(h=>[h.date,h.platform||'',h.title,h.heat||'',h.angle||'',(h.tags||[]).join(',')])));
+  addSheet('竞彩',[['日期','联赛','主队','比分','客队','结果','投入','回报','盈亏']].concat(state.data.football.map(f=>[f.date,f.league||'',f.home||'',f.homeScore!=null?`${f.homeScore}-${f.awayScore}`:'',f.away||'',f.result,f.stake||0,f.return||0,(f.return||0)-(f.stake||0)])));
+  addSheet('健身',[['日期','打卡']].concat(Object.entries(state.data.fitness).sort((a,b)=>a[0].localeCompare(b[0])).map(([k,v])=>[k,v?'✓':'✗'])));
+  addSheet('复盘',[['期间','标题','数据','优点','不足','方案']].concat(state.data.reviews.map(r=>[r.period,r.title,r.data||'',r.pros||'',r.cons||'',r.plan||''])));
+  XLSX.writeFile(wb,`小何根据地-全部数据-${today()}.xlsx`);toast('已导出全部数据');
+}
+
+/* ─── Init ─── */
+renderNav();
+renderAllModules();
+</script>
+</body>
+</html>
