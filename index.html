@@ -608,7 +608,7 @@ textarea.script{min-height:60px;font-family:"SF Mono","Fira Code",monospace;font
 const STORE_KEY = 'xiaohe_hq_v2';
 const DEFAULT_MODULES = [
   {id:'overview',  name:'今日概览',   icon:'🏡', enabled:true, group:'📋 生活'},
-  {id:'todo',      name:'每日任务',   icon:'☑️', enabled:true, group:'⚡ 效率'},
+  {id:'english',   name:'英语打卡',   icon:'📚', enabled:true, group:'🌱 成长'},
   {id:'videoedit', name:'视频剪辑',   icon:'🎬', enabled:true, group:'📋 生活'},
   {id:'finance',   name:'记账本',     icon:'💳', enabled:true, group:'📋 生活'},
   {id:'countdown', name:'重要日期',   icon:'📅', enabled:true, group:'📋 生活'},
@@ -749,7 +749,7 @@ function loadState(){
   return {
     modules: JSON.parse(JSON.stringify(DEFAULT_MODULES)),
     data: {
-      todo:[], finance:[], countdown:[], reading:[], ideas:[],
+      todo:[], english:{}, finance:[], countdown:[], reading:[], ideas:[],
       scripts:[], reviews:[], hotspots:[], football:[], fitness:{},
       videoedit:{materials:[],skills:[],templates:[],analysis:[]}
     },
@@ -878,7 +878,7 @@ function switchModule(id){
 
 const subtitles={
   overview:'一切尽在掌握 ✨',
-  todo:'每天待办清晰可见',
+  english:'每天背单词，积少成多',
   finance:'精打细算每一笔',
   countdown:'不错过任何重要时刻',
   reading:'养成阅读好习惯',
@@ -910,7 +910,7 @@ function renderAllModules(){
     div.innerHTML=`<div id="content-${m.id}"></div>`;
     c.appendChild(div);
   });
-  renderOverview();renderTodo();renderFinance();renderCountdown();
+  renderOverview();renderEnglish();renderFinance();renderCountdown();
   renderReading();renderFitness();renderFootball();
   renderIdeas();renderScript();renderReview();renderHotspot();renderVideoEdit();renderSettings();
   switchModule(currentModule);
@@ -926,6 +926,9 @@ function renderOverview(){
   const d=state.data;const td=today();const tm=thisMonth();
   const todayTodos=d.todo.filter(t=>!t.done||t.doneDate===td);
   const doneToday=todayTodos.filter(t=>t.done).length;
+  const todayWords=(d.english[td]&&d.english[td].newWords)||0;
+  const monthWords=Object.values(d.english).filter(v=>v&&v.newWords).reduce((s,v)=>s+(v.newWords||0),0);
+  const engStreak=calcEnglishStreak(d.english);
   const todayExp=d.finance.filter(f=>f.date===td&&f.type==='expense').reduce((s,f)=>s+Number(f.amount||0),0);
   const monthExp=d.finance.filter(f=>f.type==='expense'&&f.date.startsWith(tm)).reduce((s,f)=>s+Number(f.amount||0),0);
   const reading=d.reading.filter(b=>!b.done).length;
@@ -955,10 +958,10 @@ function renderOverview(){
 
     <div class="grid grid-5" style="margin-bottom:18px">
       <div class="stat stat-todo">
-        <div class="stat-icon-wrap">\u{1F4CB}</div>
-        <div class="stat-label">\u4ECA\u65E5\u5F85\u529E</div>
-        <div class="stat-value">${doneToday}<span style="font-size:16px;opacity:.5">/${todayTodos.length||0}</span></div>
-        <div class="progress"><div class="progress-bar" style="width:${todayTodos.length?doneToday/todayTodos.length*100:0}%"></div></div>
+        <div class="stat-icon-wrap">📚</div>
+        <div class="stat-label">今日单词</div>
+        <div class="stat-value">${todayWords||0}<span style="font-size:14px;opacity:.5">个</span></div>
+        <div class="stat-sub">本月累计 ${monthWords} 个</div>
       </div>
       <div class="stat stat-money">
         <div class="stat-icon-wrap">\u{1F4B3}</div>
@@ -1013,7 +1016,7 @@ function renderOverview(){
     </div>
 
     <div class="quick-actions">
-      <div class="qa-item" onclick="switchModule('todo');openTodoAdd()"><span class="qa-icon">\u2611\uFE0F</span><span>\u6DFB\u52A0\u5F85\u529E</span></div>
+      <div class="qa-item" onclick="switchModule('english');quickWordAdd()"><span class="qa-icon">📚</span><span>背单词打卡</span></div>
       <div class="qa-item" onclick="switchModule('finance');openFinanceAdd('expense')"><span class="qa-icon">\u{1F4B3}</span><span>\u8BB0\u4E00\u7B14</span></div>
       <div class="qa-item" onclick="switchModule('fitness');fitnessToggleToday()"><span class="qa-icon">\u{1F3CB}\u{FE0F}</span><span>\u4ECA\u65E5\u5065\u8EAB</span></div>
       <div class="qa-item" onclick="switchModule('football');openFBAdd()"><span class="qa-icon">\u26BD</span><span>\u7ADE\u731C\u8BB0\u5F55</span></div>
@@ -1023,87 +1026,199 @@ function renderOverview(){
   `;
 }
 
-/* ─── 2. 每日任务 ─── */
-function renderTodo(){
-  const c=$('#content-todo');
-  const all=state.data.todo;const td=today();
-  const filter=state._todoFilter||'all';
-  const todayItems=all.filter(t=>t.date===td||!t.done);
+/* ─── 2. 英语打卡（联动不背单词） ─── */
+// 数据存储格式: state.data.english = { "2026-07-28": { newWords: 20, reviewWords: 50, duration: 30, note: "" }, ... }
+// 兼容旧 todo 数据迁移
+if(!state.data.english || Array.isArray(state.data.english)){
+  state.data.english = {};
+  saveState();
+}
 
-  let list=all;
-  if(filter==='today')list=todayItems;
-  else if(filter==='done')list=all.filter(t=>t.done);
-  else if(filter==='undone')list=all.filter(t=>!t.done);
+function calcEnglishStreak(engData){
+  const td = today();
+  let streak = 0;
+  const d = new Date();
+  for(let i=0;i<365;i++){
+    const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    if(engData[k] && engData[k].newWords) streak++;
+    else break;
+    d.setDate(d.getDate()-1);
+  }
+  return streak;
+}
 
-  const totalToday=todayItems.length;
-  const doneToday=todayItems.filter(t=>t.done).length;
-  const pct=totalToday?Math.round(doneToday/totalToday*100):0;
+function renderEnglish(){
+  const c=$('#content-english');
+  const d=state.data.english; const td=today(); const tm=thisMonth();
+  const dim=daysInMonth(tm);
+  const [y,m]=tm.split('-').map(Number);
+  const now=new Date();
+  const todayIdx=now.getMonth()+1===m&&now.getFullYear()===y?now.getDate():0;
+
+  // 今日数据
+  const todayData = d[td] || {};
+  const todayNew = todayData.newWords||0;
+  const todayReview = todayData.reviewWords||0;
+  const todayDuration = todayData.duration||0;
+  const todayNote = todayData.note||'';
+
+  // 本月统计
+  let monthNew=0, monthReview=0, monthDuration=0, monthDays=0;
+  for(let i=1;i<=dim;i++){
+    const k=`${tm}-${String(i).padStart(2,'0')}`;
+    if(d[k]&&d[k].newWords){
+      monthNew += d[k].newWords||0;
+      monthReview += d[k].reviewWords||0;
+      monthDuration += d[k].duration||0;
+      monthDays++;
+    }
+  }
+
+  // 连续打卡天数
+  const streak = calcEnglishStreak(d);
+
+  // 周统计
+  const weekLabels=[], weekNew=[], weekReview=[];
+  const wd=new Date();wd.setDate(wd.getDate()-6);
+  for(let i=0;i<7;i++){
+    const k=`${wd.getFullYear()}-${String(wd.getMonth()+1).padStart(2,'0')}-${String(wd.getDate()).padStart(2,'0')}`;
+    weekLabels.push(`${wd.getMonth()+1}/${wd.getDate()}`);
+    weekNew.push((d[k]&&d[k].newWords)||0);
+    weekReview.push((d[k]&&d[k].reviewWords)||0);
+    wd.setDate(wd.getDate()+1);
+  }
 
   c.innerHTML=`
-    <div class="toolbar">
-      ${[
-        ['all','全部',all.length],
-        ['today','今日',todayItems.length],
-        ['undone','未完成',all.filter(t=>!t.done).length],
-        ['done','已完成',all.filter(t=>t.done).length]
-      ].map(([k,lbl,n])=>`<span class="pill ${filter===k?'active':''}" onclick="setTodoFilter('${k}')">${lbl} (${n})</span>`).join('')}
-      <div style="flex:1"></div>
-      <button class="btn btn-sm" onclick="openTodoAdd()">+ 新增任务</button>
+    <div class="grid grid-4" style="margin-bottom:14px">
+      <div class="stat"><div class="stat-label">今日新学</div><div class="stat-value" style="color:var(--pink-500)">${todayNew}<span style="font-size:14px;opacity:.5">个</span></div></div>
+      <div class="stat"><div class="stat-label">今日复习</div><div class="stat-value" style="color:#8b5cf6">${todayReview}<span style="font-size:14px;opacity:.5">个</span></div></div>
+      <div class="stat"><div class="stat-label">学习时长</div><div class="stat-value">${todayDuration}<span style="font-size:14px;opacity:.5">分钟</span></div></div>
+      <div class="stat"><div class="stat-label">连续打卡</div><div class="stat-value">🔥 ${streak}<span style="font-size:14px;opacity:.5">天</span></div></div>
     </div>
-    ${totalToday?`
+
+    <!-- 快捷打卡 -->
     <div class="card card-soft" style="margin-bottom:12px">
-      <div style="font-size:13px;font-weight:600;margin-bottom:8px">📊 今日进度 ${doneToday}/${totalToday} (${pct}%)</div>
-      <div class="progress" style="height:10px"><div class="progress-bar" style="width:${pct}%"></div></div>
-    </div>`:''}
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span style="font-weight:600;font-size:14px">📝 今日打卡</span>
+        <input id="eng-new" type="number" placeholder="新学单词数" value="${todayNew||''}" style="width:100px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px" min="0">
+        <input id="eng-review" type="number" placeholder="复习单词数" value="${todayReview||''}" style="width:100px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px" min="0">
+        <input id="eng-duration" type="number" placeholder="时长(分钟)" value="${todayDuration||''}" style="width:100px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px" min="0">
+        <button class="btn btn-sm" onclick="saveEnglishToday()">💾 保存</button>
+        ${todayNew>0?`<button class="btn btn-outline btn-sm" onclick="clearEnglishToday()">清空</button>`:''}
+      </div>
+      <div style="margin-top:8px">
+        <input id="eng-note" placeholder="备注（如：不背单词APP已学Unit 5）" value="${esc(todayNote)}" style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+      </div>
+      <div style="font-size:11px;color:var(--text-mute);margin-top:6px;text-align:center">
+        📱 联动「不背单词」：打开APP → 完成学习 → 回到这里记录今日数据
+      </div>
+    </div>
+
+    <!-- 月度打卡日历 -->
+    <div class="toolbar">
+      <span style="font-size:12px;color:var(--text-mute)">${tm} 打卡日历</span>
+      <div style="flex:1"></div>
+      <span style="font-size:12px;color:var(--text-mute)">本月 ${monthDays}/${dim} 天 · 新学 ${monthNew} 词 · 复习 ${monthReview} 词</span>
+    </div>
     <div class="card">
-      ${list.length?`<div class="list">${list.map(t=>`
-        <div class="list-item ${t.done?'done':''}">
-          <span class="check ${t.done?'checked':''}" onclick="toggleTodo('${t.id}')">${t.done?'✓':''}</span>
-          <div class="title" style="cursor:pointer" onclick="editTodo('${t.id}')">${esc(t.text)}</div>
-          ${t.date&&t.date!==td?`<span class="tag tag-info">${t.date}</span>`:''}
-          ${t.priority?`<span class="tag ${t.priority==='high'?'tag-danger':t.priority==='mid'?'tag-warn':'tag-gray'}">${t.priority==='high'?'高':t.priority==='mid'?'中':'低'}</span>`:''}
-          <button class="icon-btn danger" onclick="deleteTodo('${t.id}')" title="删除">🗑</button>
-        </div>`).join('')}</div>`:`<div class="empty">暂无任务</div>`}
+      <div style="display:flex;flex-wrap:wrap;gap:4px">
+        ${Array.from({length:dim},(_,i)=>i+1).map(d=>{
+          const k=`${tm}-${String(d).padStart(2,'0')}`;
+          const dayData=state.data.english[k];
+          const done=!!(dayData&&dayData.newWords);
+          const isToday=d===todayIdx;
+          const wn=dayData?dayData.newWords||0:0;
+          return `<div class="fitness-day ${done?'done':''}" onclick="quickWordDay('${k}')" title="${k}${done?' · '+wn+'个新词':''}">
+            <span style="font-size:10px;color:${isToday?'var(--pink-500)':'var(--text-mute)'};font-weight:${isToday?'700':'400'}">${['日','一','二','三','四','五','六'][new Date(y,m-1,d).getDay()]}</span>
+            <span class="d">${d}</span>
+            ${done?`<span style="font-size:8px;color:rgba(255,255,255,.7)">${wn}</span>`:''}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <!-- 本周趋势图 -->
+    <div class="card" style="margin-top:14px">
+      <div class="card-title">📈 本周学习趋势</div>
+      <div style="display:flex;align-items:flex-end;gap:6px;height:100px;padding:8px 0">
+        ${weekNew.map((n,i)=>{
+          const max=Math.max(...weekNew,...weekReview,1);
+          const hNew=Math.max(4,n/max*80);
+          const hReview=Math.max(4,(weekReview[i]||0)/max*80);
+          return `<div style="flex:1;text-align:center;display:flex;flex-direction:column;align-items:center">
+            <div style="display:flex;gap:2px;align-items:flex-end;height:80px">
+              <div style="width:14px;height:${hNew}px;background:var(--pink-400);border-radius:3px 3px 0 0" title="新学${n}"></div>
+              <div style="width:14px;height:${hReview}px;background:#c4b5fd;border-radius:3px 3px 0 0" title="复习${weekReview[i]||0}"></div>
+            </div>
+            <div style="font-size:9px;color:var(--text-mute);margin-top:4px">${weekLabels[i]}</div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div style="display:flex;justify-content:center;gap:16px;font-size:11px;color:var(--text-mute);margin-top:4px">
+        <span>🟣 新学</span><span>🟪 复习</span>
+      </div>
+    </div>
+
+    <!-- 不背单词联动说明 -->
+    <div class="card card-soft" style="margin-top:14px">
+      <div class="card-title">📱 不背单词 · 联动说明</div>
+      <div style="font-size:13px;color:var(--text-soft);line-height:1.8">
+        <p>「不背单词」是一款基于艾宾浩斯遗忘曲线的背单词 App，支持多平台同步。</p>
+        <p style="margin-top:4px"><strong>使用流程：</strong></p>
+        <ol style="padding-left:20px;margin-top:4px">
+          <li>打开「不背单词」App 完成每日学习任务</li>
+          <li>查看 App 内的「今日学习」统计（新学 / 复习数量）</li>
+          <li>回到此页面，填写上方打卡表单保存</li>
+        </ol>
+        <p style="margin-top:8px;font-size:12px;color:var(--text-mute)">
+          💡 建议每天新学 20 词 + 复习 50 词，坚持 30 天词汇量提升 600+
+        </p>
+      </div>
     </div>
   `;
 }
-function setTodoFilter(f){state._todoFilter=f;renderTodo()}
-function openTodoAdd(id){
-  const v=id?state.data.todo.find(x=>x.id===id):{text:'',date:today(),priority:'mid'};
-  openModal(`
-    <div class="modal-title">${id?'编辑':'新增'}任务</div>
-    <div class="form-row"><input id="m-text" placeholder="任务内容" value="${esc(v.text)}" autofocus></div>
-    <div class="form-row">
-      <input id="m-date" type="date" value="${v.date}">
-      <select id="m-priority">
-        <option value="low" ${v.priority==='low'?'selected':''}>低优先级</option>
-        <option value="mid" ${v.priority==='mid'?'selected':''}>中优先级</option>
-        <option value="high" ${v.priority==='high'?'selected':''}>高优先级</option>
-      </select>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
-      <button class="btn" onclick="saveTodo('${id||''}')">保存</button>
-    </div>
-  `);
+
+function saveEnglishToday(){
+  const td = today();
+  const newWords = parseInt($('#eng-new').value)||0;
+  const reviewWords = parseInt($('#eng-review').value)||0;
+  const duration = parseInt($('#eng-duration').value)||0;
+  const note = $('#eng-note').value.trim();
+  if(!newWords&&!reviewWords){toast('请至少填写新学或复习单词数');return}
+  state.data.english[td] = {newWords,reviewWords,duration,note};
+  saveState();renderEnglish();renderOverview();toast('已保存 ✅');
 }
-function saveTodo(id){
-  const text=$('#m-text').value.trim();
-  if(!text){toast('请填写任务');return}
-  const date=$('#m-date').value||today(),priority=$('#m-priority').value;
-  if(id){const t=state.data.todo.find(x=>x.id===id);if(t){t.text=text;t.date=date;t.priority=priority}}
-  else{state.data.todo.unshift({id:uid(),text,date,priority,done:false})}
-  saveState();closeModal();renderTodo();renderOverview();toast('已保存');
+
+function clearEnglishToday(){
+  if(!confirm('确认清空今日数据？'))return;
+  delete state.data.english[today()];
+  saveState();renderEnglish();renderOverview();toast('已清空');
 }
-function toggleTodo(id){
-  const t=state.data.todo.find(x=>x.id===id);
-  if(t){t.done=!t.done;t.doneDate=t.done?today():null;saveState();renderTodo();renderOverview()}
+
+function quickWordDay(k){
+  const d = state.data.english[k];
+  if(!d||!d.newWords){
+    // 点击未打卡的日期，跳转到今日打卡
+    const newWords = parseInt($('#eng-new').value)||0;
+    const reviewWords = parseInt($('#eng-review').value)||0;
+    const duration = parseInt($('#eng-duration').value)||0;
+    const note = $('#eng-note').value.trim();
+    state.data.english[k] = {newWords,reviewWords,duration,note};
+    saveState();renderEnglish();renderOverview();toast(`${k} 已标记打卡`);
+  } else {
+    if(confirm(`${k}: 新学${d.newWords}词 复习${d.reviewWords}词。要清除吗？`)){
+      delete state.data.english[k];
+      saveState();renderEnglish();renderOverview();toast('已清除');
+    }
+  }
 }
-function editTodo(id){openTodoAdd(id)}
-function deleteTodo(id){
-  if(!confirm('确认删除？'))return;
-  state.data.todo=state.data.todo.filter(x=>x.id!==id);
-  saveState();renderTodo();renderOverview();toast('已删除');
+
+function quickWordAdd(){
+  switchModule('english');
+  setTimeout(()=>{
+    const el = document.getElementById('eng-new');
+    if(el)el.focus();
+  },300);
 }
 
 /* ─── 3. 记账本 ─── */
@@ -2345,7 +2460,9 @@ function renderReview(){
 }
 function renderAutoStats(){
   const tm=thisMonth();
-  const monthDone=state.data.todo.filter(t=>t.date&&t.date.startsWith(tm)&&t.done).length;
+  const engData=state.data.english||{};
+  const monthEngDays=Object.values(engData).filter(v=>v&&v.newWords).length;
+  const monthEngWords=Object.values(engData).filter(v=>v&&v.newWords).reduce((s,v)=>s+(v.newWords||0),0);
   const monthExp=state.data.finance.filter(f=>f.date&&f.date.startsWith(tm)&&f.type==='expense').reduce((s,f)=>s+Number(f.amount||0),0);
   const monthIdeas=state.data.ideas.filter(i=>i.date&&i.date.startsWith(tm)).length;
   const monthScripts=state.data.scripts.filter(s=>s.date&&s.date.startsWith(tm)).length;
@@ -2353,7 +2470,7 @@ function renderAutoStats(){
   const monthFit=Object.keys(state.data.fitness).filter(k=>k.startsWith(tm)&&state.data.fitness[k]).length;
   return `
     <div class="grid grid-5">
-      <div class="stat"><div class="stat-label">完成任务</div><div class="stat-value">${monthDone}</div></div>
+      <div class="stat"><div class="stat-label">背单词</div><div class="stat-value">${monthEngWords}</div></div>
       <div class="stat"><div class="stat-label">支出</div><div class="stat-value">¥${monthExp.toFixed(0)}</div></div>
       <div class="stat"><div class="stat-label">灵感/脚本</div><div class="stat-value">${monthIdeas}/${monthScripts}</div></div>
       <div class="stat"><div class="stat-label">读完书</div><div class="stat-value">${monthReading}</div></div>
@@ -2838,7 +2955,8 @@ function handleImport(e){
 function exportExcelAll(){
   const wb=XLSX.utils.book_new();
   const addSheet=(name,rows)=>{XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),name)};
-  addSheet('待办',[['日期','内容','优先级','状态']].concat(state.data.todo.map(t=>[t.date,t.text,t.priority,t.done?'已完成':'未完成'])));
+  const engData=state.data.english||{};
+  addSheet('英语打卡',[['日期','新学单词','复习单词','时长(分钟)','备注']].concat(Object.entries(engData).sort((a,b)=>a[0].localeCompare(b[0])).map(([k,v])=>[k,v.newWords||0,v.reviewWords||0,v.duration||0,v.note||''])));
   addSheet('记账',[['日期','类型','分类','金额','备注']].concat(state.data.finance.map(f=>[f.date,f.type,f.category,f.amount,f.note||''])));
   addSheet('阅读',[['书名','作者','总页数','当前页','状态']].concat(state.data.reading.map(b=>[b.title,b.author||'',b.totalPages,b.progress,b.done?'已完成':'在读'])));
   addSheet('灵感',[['日期','分类','标题','标签','内容']].concat(state.data.ideas.map(i=>[i.date,i.category||'',i.title,(i.tags||[]).join(','),i.content||''])));
