@@ -1120,7 +1120,7 @@ function renderHealth(){
           var done=state.data.fitness[kk];
           var isToday=d===ftTodayIdx;
           var dow=['日','一','二','三','四','五','六'][new Date(ftY,ftM-1,d).getDay()];
-          calHtml+='<div class=\"fitness-day '+(done?'done':'')+'\" onclick=\"fitnessToggle(\\''+kk+'\\');setTimeout(function(){renderHealth()},200)\" title=\"'+kk+(done?' ✓':'')+'\">';
+          calHtml+='<div class="fitness-day '+(done?'done':'')+'" onclick="fitnessToggle(\x27'+kk+'\x27);setTimeout(function(){renderHealth()},200)" title="'+kk+(done?' ✓':'')+'">';
           calHtml+='<span style=\"font-size:10px;color:'+(isToday?'var(--pink-500)':'var(--text-mute)')+';font-weight:'+(isToday?'700':'400')+'\">'+dow+'</span>';
           calHtml+='<span class=\"d\">'+d+'</span></div>';
         }
