@@ -618,6 +618,7 @@ const DEFAULT_MODULES = [
   {id:'script',    name:'脚本创作库', icon:'✍️', enabled:true, group:'🎨 创作'},
   {id:'review',    name:'数据复盘',   icon:'📈', enabled:true, group:'🎨 创作'},
   {id:'hotspot',   name:'热点雷达',   icon:'📡', enabled:true, group:'🎨 创作'},
+  {id:'videoedit', name:'视频剪辑',   icon:'🎬', enabled:true, group:'📋 生活'},
   {id:'settings',  name:'模块设置',   icon:'🔧', enabled:true, group:'⚙️ 系统'},
 ];
 
@@ -736,6 +737,9 @@ function loadState(){
       const parsed = JSON.parse(raw);
       const ids = new Set(parsed.modules.map(m=>m.id));
       DEFAULT_MODULES.forEach(dm=>{if(!ids.has(dm.id))parsed.modules.push(dm)});
+      // 兼容旧数据
+      if(!parsed.data.videoedit)parsed.data.videoedit={materials:[],skills:[],templates:[],analysis:[]};
+      if(!parsed._veTab)parsed._veTab='analysis';
       return parsed;
     }
   }catch(e){console.warn('Load error:',e)}
@@ -743,8 +747,10 @@ function loadState(){
     modules: JSON.parse(JSON.stringify(DEFAULT_MODULES)),
     data: {
       todo:[], finance:[], countdown:[], reading:[], ideas:[],
-      scripts:[], reviews:[], hotspots:[], football:[], fitness:{}
-    }
+      scripts:[], reviews:[], hotspots:[], football:[], fitness:{},
+      videoedit:{materials:[],skills:[],templates:[],analysis:[]}
+    },
+    _veTab: 'analysis'
   };
 }
 
@@ -879,6 +885,7 @@ const subtitles={
   script:'高效创作脚本',
   review:'数据驱动成长',
   hotspot:'紧跟热点趋势',
+  videoedit:'剪辑 · 分析 · 创作',
   settings:'管理你的工作台',
 };
 
@@ -902,7 +909,7 @@ function renderAllModules(){
   });
   renderOverview();renderTodo();renderFinance();renderCountdown();
   renderReading();renderFitness();renderFootball();
-  renderIdeas();renderScript();renderReview();renderHotspot();renderSettings();
+  renderIdeas();renderScript();renderReview();renderHotspot();renderVideoEdit();renderSettings();
   switchModule(currentModule);
 }
 
@@ -2376,7 +2383,287 @@ function exportHotspots(){
   XLSX.writeFile(wb,`热点雷达-${today()}.xlsx`);toast('已导出');
 }
 
-/* ─── 12. 设置 ─── */
+/* ─── 12. 视频剪辑 ─── */
+function renderVideoEdit(){
+  const c=$('#content-videoedit');
+  const ve=state.data.videoedit;
+  const materials=ve.materials||[];
+  const skills=ve.skills||[];
+  const templates=ve.templates||[];
+  const analysis=ve.analysis||[];
+  const tab=state._veTab||'analysis';
+  c.innerHTML=`
+    <div class="toolbar">
+      <button class="pill ${tab==='analysis'?'active':''}" onclick="switchVETab('analysis')">🔍 作品分析</button>
+      <button class="pill ${tab==='materials'?'active':''}" onclick="switchVETab('materials')">🎞️ 剪辑素材</button>
+      <button class="pill ${tab==='skills'?'active':''}" onclick="switchVETab('skills')">💡 剪辑技巧</button>
+      <button class="pill ${tab==='templates'?'active':''}" onclick="switchVETab('templates')">📐 剪辑模板</button>
+      <div style="flex:1"></div>
+      <button class="btn btn-ghost btn-sm" onclick="exportVideoEdit()">导出</button>
+    </div>
+    ${tab==='analysis'?renderVEAnalysis(analysis):''}
+    ${tab==='materials'?renderVEMaterials(materials):''}
+    ${tab==='skills'?renderVESkills(skills):''}
+    ${tab==='templates'?renderVETemplates(templates):''}
+  `;
+}
+function switchVETab(t){state._veTab=t;saveState();renderVideoEdit();}
+
+function renderVEAnalysis(analysis){
+  return `
+    <div class="card card-soft" style="margin-bottom:12px;font-size:13px">
+      🔍 <strong>抖音作品分析</strong>：粘贴抖音/短视频链接或复制文案内容，拆解<strong>标题、文案结构、拍摄技巧、标签策略</strong>，学习爆款逻辑。
+    </div>
+    <button class="btn btn-sm" style="margin-bottom:14px" onclick="openVEAnalysisAdd()">+ 新增分析</button>
+    ${analysis.length?`<div class="list">${analysis.map((a,i)=>`
+      <div class="heat-item" style="cursor:pointer" onclick="toggleVEDetail(${i})">
+        <div class="heat-title">🎬 ${esc(a.title||'未命名')}</div>
+        <div style="font-size:12px;color:var(--text-mute);margin-bottom:6px">
+          ${a.creator?`<span class="tag tag-info">@${esc(a.creator)}</span>`:''}
+          ${a.platform?`<span class="tag tag-gray">${esc(a.platform)}</span>`:''}
+          ${a.date?`<span style="margin-left:6px">${a.date}</span>`:''}
+        </div>
+        ${a.tags&&a.tags.length?`<div style="margin-bottom:4px">${a.tags.map(t=>`<span class="hot-tag">#${esc(t)}</span>`).join('')}</div>`:''}
+        <div class="ve-detail" id="ve-detail-${i}" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--pink-100)">
+          ${a.copy?`<div style="margin-bottom:8px"><strong style="color:var(--pink-600)">📝 文案：</strong><div style="white-space:pre-wrap;font-size:13px;color:var(--text-soft);margin-top:4px">${esc(a.copy)}</div></div>`:''}
+          ${a.structure?`<div style="margin-bottom:8px"><strong style="color:var(--pink-600)">🏗️ 结构：</strong><div style="white-space:pre-wrap;font-size:13px;color:var(--text-soft);margin-top:4px">${esc(a.structure)}</div></div>`:''}
+          ${a.techniques?`<div style="margin-bottom:8px"><strong style="color:var(--pink-600)">🎯 技巧：</strong><div style="white-space:pre-wrap;font-size:13px;color:var(--text-soft);margin-top:4px">${esc(a.techniques)}</div></div>`:''}
+          ${a.insight?`<div style="margin-bottom:8px"><strong style="color:var(--pink-600)">💡 启发：</strong><div style="white-space:pre-wrap;font-size:13px;color:var(--text-soft);margin-top:4px">${esc(a.insight)}</div></div>`:''}
+          ${a.url?`<div style="font-size:12px">🔗 <a href="${esc(a.url)}" target="_blank" onclick="event.stopPropagation()">${esc(a.url)}</a></div>`:''}
+        </div>
+        <div class="row-actions" style="margin-top:8px">
+          <button class="icon-btn" onclick="event.stopPropagation();veToIdea('${a.id}')" title="转选题">💡</button>
+          <button class="icon-btn" onclick="event.stopPropagation();openVEAnalysisAdd('${a.id}')">✏️</button>
+          <button class="icon-btn danger" onclick="event.stopPropagation();deleteVEAnalysis('${a.id}')">🗑</button>
+        </div>
+      </div>`).join('')}</div>`:`<div class="card"><div class="empty"><span style="font-size:32px;display:block;margin-bottom:8px">🔍</span>还没有作品分析<br><span style="font-size:12px;color:var(--pink-300)">粘贴抖音链接开始拆解爆款</span></div></div>`}
+  `;
+}
+function toggleVEDetail(i){
+  const el=document.getElementById('ve-detail-'+i);
+  if(el)el.style.display=el.style.display==='none'?'block':'none';
+}
+function renderVEMaterials(materials){
+  return `
+    <div class="card card-soft" style="margin-bottom:12px;font-size:13px">
+      🎞️ <strong>剪辑素材库</strong>：管理你的视频素材、音效、BGM、转场特效等资源。
+    </div>
+    <button class="btn btn-sm" style="margin-bottom:14px" onclick="openVEMaterialAdd()">+ 添加素材</button>
+    ${materials.length?`<div class="list">${materials.map(m=>`
+      <div class="list-item">
+        <div class="title" style="flex:1">
+          <div style="font-weight:500">${esc(m.name)}</div>
+          <div style="font-size:10px;color:var(--text-mute);margin-top:2px">
+            ${m.type?`<span class="tag tag-gray">${esc(m.type)}</span>`:''}
+            ${m.source?`<span style="margin-left:4px">来源: ${esc(m.source)}</span>`:''}
+          </div>
+        </div>
+        ${m.url?`<a href="${esc(m.url)}" target="_blank" class="tag tag-info">🔗</a>`:''}
+        <div class="row-actions">
+          <button class="icon-btn" onclick="openVEMaterialAdd('${m.id}')">✏️</button>
+          <button class="icon-btn danger" onclick="deleteVEMaterial('${m.id}')">🗑</button>
+        </div>
+      </div>`).join('')}</div>`:`<div class="card"><div class="empty"><span style="font-size:32px;display:block;margin-bottom:8px">🎞️</span>还没有素材<br><span style="font-size:12px;color:var(--pink-300)">添加视频/音频素材资源</span></div></div>`}
+  `;
+}
+function renderVESkills(skills){
+  return `
+    <div class="card card-soft" style="margin-bottom:12px;font-size:13px">
+      💡 <strong>剪辑技巧笔记</strong>：记录学到的剪辑技巧、快捷键、调色参数等实用技能。
+    </div>
+    <button class="btn btn-sm" style="margin-bottom:14px" onclick="openVESkillAdd()">+ 添加技巧</button>
+    ${skills.length?`<div class="list">${skills.map(s=>`
+      <div class="heat-item">
+        <div class="heat-title">💡 ${esc(s.title)}</div>
+        <div style="font-size:12px;color:var(--text-mute);margin-bottom:6px">
+          ${s.category?`<span class="tag tag-purple">${esc(s.category)}</span>`:''}
+          ${s.source?`<span style="margin-left:4px">来源: ${esc(s.source)}</span>`:''}
+        </div>
+        ${s.content?`<div style="white-space:pre-wrap;font-size:13px;color:var(--text-soft)">${esc(s.content)}</div>`:''}
+        <div class="row-actions" style="margin-top:8px">
+          <button class="icon-btn" onclick="openVESkillAdd('${s.id}')">✏️</button>
+          <button class="icon-btn danger" onclick="deleteVESkill('${s.id}')">🗑</button>
+        </div>
+      </div>`).join('')}</div>`:`<div class="card"><div class="empty"><span style="font-size:32px;display:block;margin-bottom:8px">💡</span>还没有技巧笔记<br><span style="font-size:12px;color:var(--pink-300)">记录剪辑学习心得</span></div></div>`}
+  `;
+}
+function renderVETemplates(templates){
+  return `
+    <div class="card card-soft" style="margin-bottom:12px;font-size:13px">
+      📐 <strong>剪辑模板库</strong>：保存常用的剪辑模板（开场、转场、卡点、结尾），复制即可使用。
+    </div>
+    <button class="btn btn-sm" style="margin-bottom:14px" onclick="openVETemplateAdd()">+ 添加模板</button>
+    ${templates.length?`<div class="list">${templates.map(t=>`
+      <details class="bordered">
+        <summary>📐 ${esc(t.name)} ${t.scene?`<span class="tag tag-orange" style="margin-left:6px">${esc(t.scene)}</span>`:''}</summary>
+        <div style="margin-top:8px">
+          ${t.steps?`<div style="white-space:pre-wrap;font-size:13px;color:var(--text-soft);margin-bottom:8px">${esc(t.steps)}</div>`:''}
+          ${t.exampleUrl?`<div style="font-size:12px">🔗 <a href="${esc(t.exampleUrl)}" target="_blank">查看示例</a></div>`:''}
+          <div class="row-actions" style="margin-top:8px">
+            <button class="icon-btn" onclick="openVETemplateAdd('${t.id}')">✏️</button>
+            <button class="icon-btn danger" onclick="deleteVETemplate('${t.id}')">🗑</button>
+          </div>
+        </div>
+      </details>`).join('')}</div>`:`<div class="card"><div class="empty"><span style="font-size:32px;display:block;margin-bottom:8px">📐</span>还没有模板<br><span style="font-size:12px;color:var(--pink-300)">保存常用剪辑模板</span></div></div>`}
+  `;
+}
+
+/* --- Analysis CRUD --- */
+function openVEAnalysisAdd(id){
+  const v=id?state.data.videoedit.analysis.find(x=>x.id===id):{title:'',creator:'',platform:'抖音',url:'',copy:'',structure:'',techniques:'',insight:'',tags:[]};
+  openModal(`
+    <div class="modal-title">${id?'编辑':'新增'}作品分析</div>
+    <div class="form-row">
+      <input id="m-ve-title" placeholder="作品标题/一句话总结" value="${esc(v.title||'')}" autofocus style="flex:2">
+      <input id="m-ve-creator" placeholder="博主昵称" value="${esc(v.creator||'')}">
+    </div>
+    <div class="form-row">
+      <select id="m-ve-platform"><option value="抖音" ${v.platform==='抖音'?'selected':''}>抖音</option><option value="快手" ${v.platform==='快手'?'selected':''}>快手</option><option value="小红书" ${v.platform==='小红书'?'selected':''}>小红书</option><option value="B站" ${v.platform==='B站'?'selected':''}>B站</option><option value="视频号" ${v.platform==='视频号'?'selected':''}>视频号</option><option value="其他" ${v.platform==='其他'?'selected':''}>其他</option></select>
+      <input id="m-ve-url" placeholder="作品链接" value="${esc(v.url||'')}">
+    </div>
+    <div class="form-row"><input id="m-ve-tags" placeholder="标签（逗号分隔）" value="${esc((v.tags||[]).join(','))}"></div>
+    <div class="form-group"><label class="form-label">📝 文案/口播内容</label><textarea id="m-ve-copy" placeholder="粘贴视频文案...">${esc(v.copy||'')}</textarea></div>
+    <div class="form-group"><label class="form-label">🏗️ 内容结构分析（开头-中间-结尾）</label><textarea id="m-ve-structure" placeholder="如：0-3s 冲突钩子 → 3-15s 故事展开 → 15-30s 观点输出 → 30-40s 互动引导">${esc(v.structure||'')}</textarea></div>
+    <div class="form-group"><label class="form-label">🎯 拍摄/剪辑技巧</label><textarea id="m-ve-techniques" placeholder="如：快速切换、字幕动画、BGM卡点、特写镜头...">${esc(v.techniques||'')}</textarea></div>
+    <div class="form-group"><label class="form-label">💡 可借鉴的启发</label><textarea id="m-ve-insight" placeholder="这个作品值得学习的地方...">${esc(v.insight||'')}</textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+      <button class="btn" onclick="saveVEAnalysis('${id||''}')">保存</button>
+    </div>
+  `);
+}
+function saveVEAnalysis(id){
+  const title=$('#m-ve-title').value.trim();
+  if(!title){toast('请填写标题');return}
+  const obj={
+    title,creator:$('#m-ve-creator').value.trim(),platform:$('#m-ve-platform').value,
+    url:$('#m-ve-url').value.trim(),copy:$('#m-ve-copy').value.trim(),
+    structure:$('#m-ve-structure').value.trim(),techniques:$('#m-ve-techniques').value.trim(),
+    insight:$('#m-ve-insight').value.trim(),
+    tags:$('#m-ve-tags').value.split(',').map(s=>s.trim()).filter(Boolean),
+    date:id?(state.data.videoedit.analysis.find(x=>x.id===id)||{}).date:today(),
+  };
+  if(id){const a=state.data.videoedit.analysis.find(x=>x.id===id);if(a)Object.assign(a,obj)}
+  else{state.data.videoedit.analysis.unshift({id:uid(),...obj})}
+  saveState();closeModal();renderVideoEdit();toast('已保存');
+}
+function deleteVEAnalysis(id){
+  if(!confirm('确认删除？'))return;
+  state.data.videoedit.analysis=state.data.videoedit.analysis.filter(x=>x.id!==id);
+  saveState();renderVideoEdit();toast('已删除');
+}
+function veToIdea(id){
+  const a=state.data.videoedit.analysis.find(x=>x.id===id);
+  if(!a)return;
+  state.data.ideas.unshift({id:uid(),title:`剪辑分析 - ${a.title}`,category:'剪辑借鉴',content:a.insight||a.structure||'',tags:a.tags||[],link:a.url||'',broken:'',date:today(),time:fmtTime(new Date())});
+  saveState();renderIdeas();switchModule('ideas');toast('已转为选题灵感');
+}
+
+/* --- Material CRUD --- */
+function openVEMaterialAdd(id){
+  const v=id?state.data.videoedit.materials.find(x=>x.id===id):{name:'',type:'',source:'',url:'',note:''};
+  openModal(`
+    <div class="modal-title">${id?'编辑':'添加'}素材</div>
+    <div class="form-row"><input id="m-vem-name" placeholder="素材名称" value="${esc(v.name||'')}" autofocus></div>
+    <div class="form-row">
+      <select id="m-vem-type"><option value="">选择类型</option>${['视频片段','音频/BGM','音效','转场','特效','字幕模板','调色预设','其他'].map(t=>`<option value="${t}" ${v.type===t?'selected':''}>${t}</option>`).join('')}</select>
+      <input id="m-vem-source" placeholder="来源" value="${esc(v.source||'')}">
+    </div>
+    <div class="form-row"><input id="m-vem-url" placeholder="链接" value="${esc(v.url||'')}"></div>
+    <div class="form-group"><textarea id="m-vem-note" placeholder="备注">${esc(v.note||'')}</textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+      <button class="btn" onclick="saveVEMaterial('${id||''}')">保存</button>
+    </div>
+  `);
+}
+function saveVEMaterial(id){
+  const name=$('#m-vem-name').value.trim();
+  if(!name){toast('请填写名称');return}
+  const obj={name,type:$('#m-vem-type').value,source:$('#m-vem-source').value.trim(),url:$('#m-vem-url').value.trim(),note:$('#m-vem-note').value.trim()};
+  if(id){const m=state.data.videoedit.materials.find(x=>x.id===id);if(m)Object.assign(m,obj)}
+  else{state.data.videoedit.materials.unshift({id:uid(),...obj})}
+  saveState();closeModal();renderVideoEdit();toast('已保存');
+}
+function deleteVEMaterial(id){
+  if(!confirm('确认删除？'))return;
+  state.data.videoedit.materials=state.data.videoedit.materials.filter(x=>x.id!==id);
+  saveState();renderVideoEdit();toast('已删除');
+}
+
+/* --- Skill CRUD --- */
+function openVESkillAdd(id){
+  const v=id?state.data.videoedit.skills.find(x=>x.id===id):{title:'',category:'',content:'',source:''};
+  openModal(`
+    <div class="modal-title">${id?'编辑':'添加'}技巧</div>
+    <div class="form-row"><input id="m-ves-title" placeholder="技巧标题" value="${esc(v.title||'')}" autofocus></div>
+    <div class="form-row">
+      <select id="m-ves-category"><option value="">选择分类</option>${['剪辑操作','调色','字幕','转场','BGM/音效','节奏/卡点','特效','拍摄技巧','封面设计','文案技巧','其他'].map(c=>`<option value="${c}" ${v.category===c?'selected':''}>${c}</option>`).join('')}</select>
+      <input id="m-ves-source" placeholder="来源" value="${esc(v.source||'')}">
+    </div>
+    <div class="form-group"><textarea id="m-ves-content" placeholder="技巧详细内容">${esc(v.content||'')}</textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+      <button class="btn" onclick="saveVESkill('${id||''}')">保存</button>
+    </div>
+  `);
+}
+function saveVESkill(id){
+  const title=$('#m-ves-title').value.trim();
+  if(!title){toast('请填写标题');return}
+  const obj={title,category:$('#m-ves-category').value,content:$('#m-ves-content').value.trim(),source:$('#m-ves-source').value.trim()};
+  if(id){const s=state.data.videoedit.skills.find(x=>x.id===id);if(s)Object.assign(s,obj)}
+  else{state.data.videoedit.skills.unshift({id:uid(),...obj})}
+  saveState();closeModal();renderVideoEdit();toast('已保存');
+}
+function deleteVESkill(id){
+  if(!confirm('确认删除？'))return;
+  state.data.videoedit.skills=state.data.videoedit.skills.filter(x=>x.id!==id);
+  saveState();renderVideoEdit();toast('已删除');
+}
+
+/* --- Template CRUD --- */
+function openVETemplateAdd(id){
+  const v=id?state.data.videoedit.templates.find(x=>x.id===id):{name:'',scene:'',steps:'',exampleUrl:''};
+  openModal(`
+    <div class="modal-title">${id?'编辑':'添加'}模板</div>
+    <div class="form-row"><input id="m-vet-name" placeholder="模板名称" value="${esc(v.name||'')}" autofocus></div>
+    <div class="form-row">
+      <select id="m-vet-scene"><option value="">适用场景</option>${['开场','转场','卡点','结尾','Vlog','口播','产品展示','教程','其他'].map(s=>`<option value="${s}" ${v.scene===s?'selected':''}>${s}</option>`).join('')}</select>
+    </div>
+    <div class="form-group"><textarea id="m-vet-steps" placeholder="模板步骤（每行一步）">${esc(v.steps||'')}</textarea></div>
+    <div class="form-row"><input id="m-vet-example" placeholder="示例链接" value="${esc(v.exampleUrl||'')}"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+      <button class="btn" onclick="saveVETemplate('${id||''}')">保存</button>
+    </div>
+  `);
+}
+function saveVETemplate(id){
+  const name=$('#m-vet-name').value.trim();
+  if(!name){toast('请填写名称');return}
+  const obj={name,scene:$('#m-vet-scene').value,steps:$('#m-vet-steps').value.trim(),exampleUrl:$('#m-vet-example').value.trim()};
+  if(id){const t=state.data.videoedit.templates.find(x=>x.id===id);if(t)Object.assign(t,obj)}
+  else{state.data.videoedit.templates.unshift({id:uid(),...obj})}
+  saveState();closeModal();renderVideoEdit();toast('已保存');
+}
+function deleteVETemplate(id){
+  if(!confirm('确认删除？'))return;
+  state.data.videoedit.templates=state.data.videoedit.templates.filter(x=>x.id!==id);
+  saveState();renderVideoEdit();toast('已删除');
+}
+
+function exportVideoEdit(){
+  const ve=state.data.videoedit;
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['名称','类型','来源','链接','备注']].concat((ve.materials||[]).map(m=>[m.name,m.type||'',m.source||'',m.url||'',m.note||'']))),'素材');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['标题','分类','内容','来源']].concat((ve.skills||[]).map(s=>[s.title,s.category||'',s.content||'',s.source||'']))),'技巧');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['名称','场景','步骤','示例']].concat((ve.templates||[]).map(t=>[t.name,t.scene||'',t.steps||'',t.exampleUrl||'']))),'模板');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['日期','博主','平台','标题','文案','结构','技巧','启发','标签','链接']].concat((ve.analysis||[]).map(a=>[a.date,a.creator||'',a.platform||'',a.title,a.copy||'',a.structure||'',a.techniques||'',a.insight||'',(a.tags||[]).join(','),a.url||'']))),'分析');
+  XLSX.writeFile(wb,`视频剪辑-${today()}.xlsx`);toast('已导出视频剪辑数据');
+}
+
+/* ─── 13. 设置 ─── */
 function renderSettings(){
   const c=$('#content-settings');
   c.innerHTML=`
@@ -2461,6 +2748,11 @@ function exportExcelAll(){
   addSheet('竞彩',[['日期','联赛','主队','比分','客队','结果','投入','回报','盈亏']].concat(state.data.football.map(f=>[f.date,f.league||'',f.home||'',f.homeScore!=null?`${f.homeScore}-${f.awayScore}`:'',f.away||'',f.result,f.stake||0,f.return||0,(f.return||0)-(f.stake||0)])));
   addSheet('健身',[['日期','打卡']].concat(Object.entries(state.data.fitness).sort((a,b)=>a[0].localeCompare(b[0])).map(([k,v])=>[k,v?'✓':'✗'])));
   addSheet('复盘',[['期间','标题','数据','优点','不足','方案']].concat(state.data.reviews.map(r=>[r.period,r.title,r.data||'',r.pros||'',r.cons||'',r.plan||''])));
+  const ve=state.data.videoedit;
+  addSheet('剪辑素材',[['名称','类型','来源','链接','备注']].concat((ve.materials||[]).map(m=>[m.name,m.type||'',m.source||'',m.url||'',m.note||''])));
+  addSheet('剪辑技巧',[['标题','分类','内容','来源']].concat((ve.skills||[]).map(s=>[s.title,s.category||'',s.content||'',s.source||''])));
+  addSheet('剪辑模板',[['名称','适用场景','步骤','示例链接']].concat((ve.templates||[]).map(t=>[t.name,t.scene||'',t.steps||'',t.exampleUrl||''])));
+  addSheet('抖音分析',[['日期','博主','链接','标题','文案','结构','技巧','标签']].concat((ve.analysis||[]).map(a=>[a.date,a.creator||'',a.url||'',a.title||'',a.copy||'',a.structure||'',a.techniques||'',(a.tags||[]).join(',')])));
   XLSX.writeFile(wb,`小何根据地-全部数据-${today()}.xlsx`);toast('已导出全部数据');
 }
 
