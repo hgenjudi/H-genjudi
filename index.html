@@ -1738,16 +1738,16 @@ function deleteFB(id){
   saveState();renderFootball();renderOverview();toast('已删除');
 }
 
-/* ─── 实时赛事拉取（中国体育彩票 500.com API） ─── */
+/* ─── 实时赛事拉取（OpenLigaDB 免费 API） ─── */
 let _liveMatches = [];
 let _liveSelected = new Set();
 
-// 联赛名称映射
-const FB_LEAGUE_MAP = {
-  '英超':'英超','西甲':'西甲','意甲':'意甲','德甲':'德甲','法甲':'法甲',
-  '中超':'中超','日职':'日职','韩K':'韩K联','澳超':'澳超','美职':'美职',
-  '欧冠':'欧冠','欧罗巴':'欧罗巴','英冠':'英冠','荷甲':'荷甲','葡超':'葡超',
-};
+// OpenLigaDB 联赛代码映射
+const OL_LEAGUES = [
+  {code:'bl1', name:'德甲'},
+  {code:'bl2', name:'德乙'},
+  {code:'bl3', name:'德丙'},
+];
 
 async function fetchLiveMatches(){
   const statusEl = document.getElementById('fb-live-status');
@@ -1757,89 +1757,51 @@ async function fetchLiveMatches(){
   matchesEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-mute)">⏳ 正在获取比赛数据...</div>';
 
   try{
-    // 使用 500.com 的 JSON 接口获取竞彩足球赛程
-    const resp = await fetch('https://trade.500.com/jczq/async.php?playtype=hhgg&callback=cb',{
-      headers:{'Accept':'application/json'}
+    _liveMatches = [];
+    // 并行获取多个联赛数据
+    const results = await Promise.allSettled(
+      OL_LEAGUES.map(l=>fetch(`https://api.openligadb.de/getmatchdata/${l.code}`).then(r=>r.json()).then(d=>d.map(m=>({...m,_leagueName:l.name}))))
+    );
+    results.forEach(r=>{
+      if(r.status==='fulfilled'&&Array.isArray(r.value)){
+        r.value.forEach(item=>{
+          const hscore=item.matchResults&&item.matchResults.length>0&&item.matchResults[0].pointsTeam1!=null?item.matchResults[0].pointsTeam1:null;
+          const ascore=item.matchResults&&item.matchResults.length>0&&item.matchResults[0].pointsTeam2!=null?item.matchResults[0].pointsTeam2:null;
+          let result=null;
+          if(hscore!=null&&ascore!=null){
+            if(hscore>ascore)result='win';
+            else if(hscore===ascore)result='draw';
+            else result='lose';
+          }
+          _liveMatches.push({
+            id:item.matchID,
+            date:item.matchDateTimeUTC?item.matchDateTimeUTC.slice(0,10):today(),
+            time:item.matchDateTimeUTC?item.matchDateTimeUTC.slice(11,16):'',
+            league:item._leagueName||item.leagueName||'',
+            home:item.team1?item.team1.teamName:'',
+            away:item.team2?item.team2.teamName:'',
+            homeScore:hscore,
+            awayScore:ascore,
+            result,
+            status:item.matchIsFinished?'完':(hscore!=null?'进行中':'待开'),
+          });
+        });
+      }
     });
-    const text = await resp.text();
-    // 提取 JSON（去除 callback 包裹）
-    const jsonMatch = text.match(/cb\(([\s\S]*)\)/);
-    if(!jsonMatch)throw new Error('解析失败');
-    const data = JSON.parse(jsonMatch[1]);
-    _liveMatches = [];
-
-    if(data&&data.data&&Array.isArray(data.data)){
-      data.data.forEach(item=>{
-        const league = FB_LEAGUE_MAP[item.lname] || item.lname || '';
-        const hscore = item.hscore!=null?parseInt(item.hscore):null;
-        const ascore = item.ascore!=null?parseInt(item.ascore):null;
-        let result = null;
-        if(hscore!=null&&ascore!=null){
-          if(hscore>ascore)result='win';
-          else if(hscore===ascore)result='draw';
-          else result='lose';
-        }
-        _liveMatches.push({
-          id:item.fid||item.id,
-          date:item.mdate||today(),
-          league,
-          home:item.hname||'',
-          away:item.aname||'',
-          homeScore:hscore,
-          awayScore:ascore,
-          result,
-          status:item.status||'',
-        });
-      });
-    }
+    _liveMatches.sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time));
     renderLiveMatches();
-    statusEl.textContent = `✅ 共 ${_liveMatches.length} 场比赛`;
+    const live=_liveMatches.filter(m=>m.status==='进行中').length;
+    const done=_liveMatches.filter(m=>m.status==='完').length;
+    statusEl.textContent = `✅ ${_liveMatches.length}场 (${live}进行中 ${done}已完) · OpenLigaDB`;
   }catch(e){
-    console.warn('500.com API failed, trying backup...',e);
-    // 备用：使用静态模拟数据 + 提示
-    try{
-      await fetchBackupMatches();
-      statusEl.textContent = `⚠️ 离线数据（${_liveMatches.length}场），实时接口暂不可用`;
-    }catch(e2){
-      statusEl.textContent = '❌ 获取失败，请检查网络';
-      matchesEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-mute)">获取比赛数据失败，请稍后重试</div>';
-    }
+    console.warn('API failed:',e);
+    statusEl.textContent = '❌ 获取失败';
+    matchesEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-mute)">获取比赛数据失败<br><span style="font-size:12px;color:var(--pink-300)">请点击手动刷新重试</span></div>';
   }
 }
 
-async function fetchBackupMatches(){
-  // 备用接口：用 openligadb 或 football-data
-  const today = new Date();
-  const dateStr = today.toISOString().slice(0,10);
-  // 使用 500.com 的另一个接口
-  const resp = await fetch('https://live.500.com/static/json/live/live.json?'+Date.now(),{
-    headers:{'Accept':'application/json','Referer':'https://live.500.com/'}
-  });
-  const text = await resp.text();
-  try{
-    const data = JSON.parse(text);
-    _liveMatches = [];
-    if(data&&data.data){
-      data.data.forEach(item=>{
-        const league = FB_LEAGUE_MAP[item.lname] || item.lname || '';
-        _liveMatches.push({
-          id:item.fid||item.id,
-          date:item.mdate||dateStr,
-          league,
-          home:item.hname||'',
-          away:item.aname||'',
-          homeScore:item.hscore!=null?parseInt(item.hscore):null,
-          awayScore:item.ascore!=null?parseInt(item.ascore):null,
-          result:null,
-          status:item.status||'',
-        });
-      });
-    }
-    renderLiveMatches();
-  }catch(e){
-    throw e;
-  }
-}
+// fetchBackupMatches 已废弃，保留空函数兼容
+async function fetchBackupMatches(){}
 
 function renderLiveMatches(){
   const el = document.getElementById('fb-live-matches');
@@ -1860,12 +1822,12 @@ function renderLiveMatches(){
       <tbody>${_liveMatches.map((m,i)=>`
         <tr>
           <td><input type="checkbox" data-idx="${i}" onchange="toggleLiveMatch(this)" ${_liveSelected.has(i)?'checked':''}></td>
-          <td style="font-size:12px;color:var(--text-mute)">${(m.date||'').slice(-5)}</td>
+          <td style="font-size:12px;color:var(--text-mute)">${m.time||(m.date||'').slice(-5)}</td>
           <td><span class="tag tag-gray">${esc(m.league||'其他')}</span></td>
           <td>${esc(m.home)}</td>
           <td>${m.homeScore!=null?`<strong>${m.homeScore}-${m.awayScore}</strong>`:'vs'}</td>
           <td>${esc(m.away)}</td>
-          <td>${m.status?`<span class="tag ${m.status==='完'?'tag-success':m.status.includes('中')?'tag-warn':'tag-info'}">${esc(m.status)}</span>`:`<span class="tag tag-gray">待开</span>`}</td>
+          <td>${m.status?`<span class="tag ${m.status==='完'?'tag-success':m.status==='进行中'?'tag-warn':'tag-info'}">${esc(m.status)}</span>`:`<span class="tag tag-gray">待开</span>`}</td>
           <td>
             <button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:11px;margin:1px" onclick="quickGuess('${i}','win')">胜</button>
             <button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:11px;margin:1px" onclick="quickGuess('${i}','draw')">平</button>
