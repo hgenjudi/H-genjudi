@@ -5,9 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#ec4899">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="小何根据地">
+<meta name="mobile-web-app-capable" content="yes">
 <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgcng9IjQwIiBmaWxsPSIjZWM0ODk5Ii8+PHRleHQgeD0iOTAiIHk9IjExNSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2ZmZiIgZm9udC1zaXplPSI3MCIgZm9udC1mYW1pbHk9IkhlbHZldGljYSI+5L2VPC90ZXh0Pjwvc3ZnPg==">
+<link rel="manifest" href="/H-genjudi/manifest.json">
 <title>小何根据地</title>
 <script src="xlsx.full.min.js"></script>
 <style>
@@ -2298,6 +2300,15 @@ function exportExcelAll(){
 /* ─── Init ─── */
 renderNav();
 renderAllModules();
+</script>
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/H-genjudi/sw.js').then(function(){
+    console.log('SW registered');
+  }).catch(function(e){
+    console.log('SW failed:', e);
+  });
+}
 </script>
 </body>
 </html>
