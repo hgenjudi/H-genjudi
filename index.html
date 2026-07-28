@@ -1738,16 +1738,18 @@ function deleteFB(id){
   saveState();renderFootball();renderOverview();toast('已删除');
 }
 
-/* ─── 实时赛事拉取（OpenLigaDB 免费 API） ─── */
+/* ─── 实时赛事拉取（Football Live API · FotMob数据 · 500+联赛） ─── */
 let _liveMatches = [];
 let _liveSelected = new Set();
 
-// OpenLigaDB 联赛代码映射
-const OL_LEAGUES = [
-  {code:'bl1', name:'德甲'},
-  {code:'bl2', name:'德乙'},
-  {code:'bl3', name:'德丙'},
-];
+// 体彩竞彩常见联赛名称
+const TARGET_LEAGUES = new Set([
+  'Premier League','La Liga','Serie A','Bundesliga','Ligue 1',
+  'Champions League','Europa League','Europa Conference League',
+  'Chinese Super League','J1 League','K League 1','A-League',
+  'MLS','Championship','Eredivisie','Liga Portugal','Süper Lig',
+  'Saudi Pro League','Superligaen','Allsvenskan','Eliteserien',
+]);
 
 async function fetchLiveMatches(){
   const statusEl = document.getElementById('fb-live-status');
@@ -1758,49 +1760,53 @@ async function fetchLiveMatches(){
 
   try{
     _liveMatches = [];
-    // 并行获取多个联赛数据
-    const results = await Promise.allSettled(
-      OL_LEAGUES.map(l=>fetch(`https://api.openligadb.de/getmatchdata/${l.code}`).then(r=>r.json()).then(d=>d.map(m=>({...m,_leagueName:l.name}))))
-    );
-    results.forEach(r=>{
-      if(r.status==='fulfilled'&&Array.isArray(r.value)){
-        r.value.forEach(item=>{
-          const hscore=item.matchResults&&item.matchResults.length>0&&item.matchResults[0].pointsTeam1!=null?item.matchResults[0].pointsTeam1:null;
-          const ascore=item.matchResults&&item.matchResults.length>0&&item.matchResults[0].pointsTeam2!=null?item.matchResults[0].pointsTeam2:null;
-          let result=null;
-          if(hscore!=null&&ascore!=null){
-            if(hscore>ascore)result='win';
-            else if(hscore===ascore)result='draw';
-            else result='lose';
-          }
-          _liveMatches.push({
-            id:item.matchID,
-            date:item.matchDateTimeUTC?item.matchDateTimeUTC.slice(0,10):today(),
-            time:item.matchDateTimeUTC?item.matchDateTimeUTC.slice(11,16):'',
-            league:item._leagueName||item.leagueName||'',
-            home:item.team1?item.team1.teamName:'',
-            away:item.team2?item.team2.teamName:'',
-            homeScore:hscore,
-            awayScore:ascore,
-            result,
-            status:item.matchIsFinished?'完':(hscore!=null?'进行中':'待开'),
-          });
+    const dateStr = today();
+    const resp = await fetch(`https://football-live-api.vercel.app/api/fotmob/matches/date/${dateStr}`);
+    if(!resp.ok)throw new Error('HTTP '+resp.status);
+    const json = await resp.json();
+    if(!json.success||!json.data)throw new Error('API返回异常');
+
+    const leagues = json.data.leagues||[];
+    leagues.forEach(l=>{
+      const name = l.name||'';
+      // 只显示体彩常见联赛
+      if(!TARGET_LEAGUES.has(name))return;
+      (l.matches||[]).forEach(m=>{
+        const hs=m.home&&m.home.score!=null?m.home.score:null;
+        const as=m.away&&m.away.score!=null?m.away.score:null;
+        let result=null;
+        if(hs!=null&&as!=null){
+          if(hs>as)result='win';
+          else if(hs===as)result='draw';
+          else result='lose';
+        }
+        const st=m.status||{};
+        _liveMatches.push({
+          id:m.id,
+          date:dateStr,
+          time:st.utcTime?new Date(st.utcTime).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',hour12:false}):'',
+          league:name,
+          home:m.home?m.home.name||'':'',
+          away:m.away?m.away.name||'':'',
+          homeScore:hs,
+          awayScore:as,
+          result,
+          status:st.finished?'完':st.started?'进行中':'待开',
         });
-      }
+      });
     });
-    _liveMatches.sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time));
+    _liveMatches.sort((a,b)=>a.time.localeCompare(b.time)||a.league.localeCompare(b.league));
     renderLiveMatches();
     const live=_liveMatches.filter(m=>m.status==='进行中').length;
     const done=_liveMatches.filter(m=>m.status==='完').length;
-    statusEl.textContent = `✅ ${_liveMatches.length}场 (${live}进行中 ${done}已完) · OpenLigaDB`;
+    statusEl.textContent = `✅ ${_liveMatches.length}场 (${live}进行中 ${done}已完) · FotMob`;
   }catch(e){
-    console.warn('API failed:',e);
-    statusEl.textContent = '❌ 获取失败';
-    matchesEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-mute)">获取比赛数据失败<br><span style="font-size:12px;color:var(--pink-300)">请点击手动刷新重试</span></div>';
+    console.warn('Football API failed:',e);
+    statusEl.textContent = '❌ 获取失败，请点击手动刷新';
+    matchesEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-mute)">获取比赛数据失败<br><span style="font-size:12px;color:var(--pink-300)">请检查网络后点击「手动刷新」重试</span></div>';
   }
 }
 
-// fetchBackupMatches 已废弃，保留空函数兼容
 async function fetchBackupMatches(){}
 
 function renderLiveMatches(){
