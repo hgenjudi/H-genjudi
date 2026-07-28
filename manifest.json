@@ -9,9 +9,14 @@
   "background_color": "#fdf2f8",
   "theme_color": "#ec4899",
   "icons": [{
-    "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgcng9IjQwIiBmaWxsPSIjZWM0ODk5Ii8+PHRleHQgeD0iOTAiIHk9IjExNSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2ZmZiIgZm9udC1zaXplPSI3MCIgZm9udC1mYW1pbHk9IkhlbHZldGljYSI+5L2VPC90ZXh0Pjwvc3ZnPg==",
-    "sizes": "180x180",
-    "type": "image/svg+xml",
+    "src": "/H-genjudi/icon-192.png",
+    "sizes": "192x192",
+    "type": "image/png",
+    "purpose": "any maskable"
+  }, {
+    "src": "/H-genjudi/icon-512.png",
+    "sizes": "512x512",
+    "type": "image/png",
     "purpose": "any maskable"
   }]
 }
