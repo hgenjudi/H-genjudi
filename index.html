@@ -1742,14 +1742,8 @@ function deleteFB(id){
 let _liveMatches = [];
 let _liveSelected = new Set();
 
-// 体彩竞彩常见联赛名称
-const TARGET_LEAGUES = new Set([
-  'Premier League','La Liga','Serie A','Bundesliga','Ligue 1',
-  'Champions League','Europa League','Europa Conference League',
-  'Chinese Super League','J1 League','K League 1','A-League',
-  'MLS','Championship','Eredivisie','Liga Portugal','Süper Lig',
-  'Saudi Pro League','Superligaen','Allsvenskan','Eliteserien',
-]);
+// 显示所有联赛（不再过滤），体彩竞彩覆盖范围更广
+const SKIP_LEAGUES = new Set([]);
 
 async function fetchLiveMatches(){
   const statusEl = document.getElementById('fb-live-status');
@@ -1769,8 +1763,6 @@ async function fetchLiveMatches(){
     const leagues = json.data.leagues||[];
     leagues.forEach(l=>{
       const name = l.name||'';
-      // 只显示体彩常见联赛
-      if(!TARGET_LEAGUES.has(name))return;
       (l.matches||[]).forEach(m=>{
         const hs=m.home&&m.home.score!=null?m.home.score:null;
         const as=m.away&&m.away.score!=null?m.away.score:null;
