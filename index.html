@@ -607,6 +607,7 @@ textarea.script{min-height:60px;font-family:"SF Mono","Fira Code",monospace;font
 
 const STORE_KEY = 'xiaohe_hq_v2';
 const DEFAULT_MODULES = [
+  {id:'health',    name:'健康管理',   icon:'💪', enabled:true, group:'📋 生活'},
   {id:'english',   name:'英语打卡',   icon:'📚', enabled:true, group:'🌱 成长'},
   {id:'videoedit', name:'视频剪辑',   icon:'🎬', enabled:true, group:'📋 生活'},
   {id:'finance',   name:'记账本',     icon:'💳', enabled:true, group:'📋 生活'},
@@ -876,7 +877,7 @@ function highlightNav(){
   $$('#nav-list .nav-item').forEach(el=>el.classList.toggle('active',el.dataset.id===currentModule));
 }
 
-let currentModule='english';
+let currentModule='health';
 
 function switchModule(id){
   currentModule=id;
@@ -891,6 +892,7 @@ function switchModule(id){
 }
 
 const subtitles={
+  health:'饮食运动一手掌握 🥗💪',
   english:'每天背单词，积少成多',
   finance:'精打细算每一笔',
   countdown:'不错过任何重要时刻',
@@ -923,7 +925,7 @@ function renderAllModules(){
     div.innerHTML=`<div id="content-${m.id}"></div>`;
     c.appendChild(div);
   });
-  renderEnglish();renderFinance();renderCountdown();
+  renderHealth();renderEnglish();renderFinance();renderCountdown();
   renderReading();renderFootball();
   renderIdeas();renderScript();renderReview();renderHotspot();renderVideoEdit();renderSettings();
   switchModule(currentModule);
@@ -932,6 +934,368 @@ function renderAllModules(){
 /* ============================================================
    模块渲染
    ============================================================ */
+
+
+/* ─── 1. 健康管理（饮食+健身一体化） ─── */
+// 内置食物热量数据库（千卡/100克 或 千卡/份）
+const FOOD_DB = {
+  // 主食
+  '米饭':116,'馒头':223,'面条':137,'全麦面包':246,'燕麦片':377,'红薯':86,'玉米':112,'小米粥':46,'糙米饭':123,'紫薯':82,'杂粮饭':118,'白粥':30,
+  // 蛋白质
+  '鸡蛋':144,'蛋白':60,'鸡胸肉':133,'鸡腿':181,'牛肉(瘦)':125,'猪瘦肉':143,'虾仁':48,'三文鱼':208,'鳕鱼':82,'豆腐':76,'豆浆':31,'牛奶':54,'酸奶':72,'脱脂牛奶':35,'金枪鱼':116,
+  // 蔬菜
+  '西兰花':34,'菠菜':23,'生菜':15,'西红柿':18,'黄瓜':15,'胡萝卜':37,'白菜':13,'芹菜':14,'冬瓜':11,'蘑菇':22,'豆芽':18,'海带':12,'秋葵':31,'芦笋':20,'青椒':22,'油麦菜':15,
+  // 水果
+  '苹果':53,'香蕉':93,'橙子':47,'葡萄':67,'西瓜':31,'草莓':32,'蓝莓':57,'猕猴桃':61,'火龙果':55,'圣女果':22,'芒果':60,'柚子':42,'牛油果':171,
+  // 饮品/零食
+  '黑咖啡':2,'拿铁':56,'奶茶':78,'可乐':42,'果汁':45,'豆浆':31,'坚果':607,'黑巧克力':546,
+  // 油脂/调料
+  '橄榄油':899,'花生油':899,'沙拉酱':680,'蚝油':120,'生抽':53,
+};
+const MEAL_TYPES = ['早餐','午餐','晚餐','加餐'];
+const MEAL_ICONS = {早餐:'🌅',午餐:'☀️',晚餐:'🌙',加餐:'🍪'};
+const MEAL_COLORS = {早餐:'#f59e0b',午餐:'#ef4444',晚餐:'#8b5cf6',加餐:'#10b981'};
+
+// 初始化饮食数据结构
+if(!state.data.diet){state.data.diet={};saveState()}
+// 兼容旧 overview 数据
+if(!state.data.diet.meals){state.data.diet={meals:{},targetCal:1500};saveState()}
+
+function renderHealth(){
+  const c=$('#content-health');
+  const d=state.data.diet;const td=today();
+  const tm=thisMonth();
+
+  // 今日餐食
+  const todayMeals = d.meals&&d.meals[td] ? d.meals[td] : {早餐:[],午餐:[],晚餐:[],加餐:[]};
+  const targetCal = d.targetCal||1500;
+
+  // 计算今日各餐热量
+  let totalCal=0, totalProtein=0, totalCarb=0, totalFat=0;
+  const mealCals = {};
+  MEAL_TYPES.forEach(type=>{
+    let cal=0;
+    (todayMeals[type]||[]).forEach(f=>{
+      const fCal = f.cal||0;
+      cal += fCal;
+      totalCal += fCal;
+      totalProtein += f.protein||0;
+      totalCarb += f.carb||0;
+      totalFat += f.fat||0;
+    });
+    mealCals[type]=cal;
+  });
+
+  // 健身消耗联动
+  const fitToday = state.data.fitness[td];
+  const fitDays = Object.keys(state.data.fitness).filter(k=>k.startsWith(tm)&&state.data.fitness[k]).length;
+  // 估算运动消耗：假设每次健身消耗300千卡
+  const exerciseCal = fitToday ? 300 : 0;
+  const netCal = totalCal - exerciseCal;
+
+  const calPct = targetCal ? Math.min(100,Math.round(totalCal/targetCal*100)) : 0;
+  const calStatus = calPct>=100?'超标':calPct>=80?'接近':'适中';
+
+  // 本月趋势
+  const monthDays = daysInMonth(tm);
+  let monthCalTotal=0, monthDayCount=0;
+  for(let i=1;i<=monthDays;i++){
+    const k=`${tm}-${String(i).padStart(2,'0')}`;
+    const md=d.meals&&d.meals[k];
+    if(md){
+      let dc=0;
+      MEAL_TYPES.forEach(t=>{(md[t]||[]).forEach(f=>{dc+=f.cal||0})});
+      if(dc>0){monthCalTotal+=dc;monthDayCount++}
+    }
+  }
+  const avgDailyCal = monthDayCount ? Math.round(monthCalTotal/monthDayCount) : 0;
+
+  c.innerHTML=`
+    <!-- 热量总览条 -->
+    <div class="card card-soft" style="margin-bottom:14px;overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-size:24px;font-weight:700;color:${calPct>=100?'#ef4444':'var(--pink-500)'}">${totalCal}<span style="font-size:14px;opacity:.6"> / ${targetCal} 千卡</span></div>
+          <div style="font-size:12px;color:var(--text-mute);margin-top:2px">
+            ${exerciseCal>0?`🔥 运动消耗 ${exerciseCal} 千卡 · 净摄入 ${netCal} 千卡`:`今日${calStatus} · 目标${targetCal}千卡`}
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:13px;font-weight:600;color:var(--pink-500)">${calPct}%</div>
+          <div style="font-size:11px;color:var(--text-mute)">完成度</div>
+        </div>
+      </div>
+      <div class="progress" style="height:8px;margin-top:8px">
+        <div class="progress-bar" style="width:${calPct}%;background:${calPct>=100?'#ef4444':calPct>=80?'#f59e0b':'linear-gradient(90deg,var(--pink-400),var(--rose-400))'}"></div>
+      </div>
+      <div style="display:flex;justify-content:space-around;margin-top:10px;font-size:11px;color:var(--text-mute)">
+        ${MEAL_TYPES.map(t=>`<div style="text-align:center"><span style="font-size:16px">${MEAL_ICONS[t]}</span><br>${t}<br><span style="font-weight:600;color:var(--text)">${mealCals[t]||0}</span>千卡</div>`).join('')}
+      </div>
+    </div>
+
+    <!-- 健身联动 -->
+    <div class="grid grid-4" style="margin-bottom:14px">
+      <div class="stat"><div class="stat-label">本月健身</div><div class="stat-value">${fitDays}<span style="font-size:14px;opacity:.5">天</span></div></div>
+      <div class="stat"><div class="stat-label">今日摄入</div><div class="stat-value" style="color:${calPct>=100?'#ef4444':'var(--pink-500)'}">${totalCal}<span style="font-size:14px;opacity:.5">千卡</span></div></div>
+      <div class="stat"><div class="stat-label">运动消耗</div><div class="stat-value">${exerciseCal}<span style="font-size:14px;opacity:.5">千卡</span></div></div>
+      <div class="stat"><div class="stat-label">月均摄入</div><div class="stat-value">${avgDailyCal||'-'}<span style="font-size:14px;opacity:.5">千卡</span></div></div>
+    </div>
+
+    <!-- 热量目标设置 -->
+    <div class="card card-soft" style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span style="font-weight:600;font-size:13px">🎯 每日目标</span>
+        <input id="diet-target" type="number" value="${targetCal}" style="width:90px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px" min="800" max="3000" step="50"> 千卡
+        <button class="btn btn-sm" onclick="saveDietTarget()">保存</button>
+        <span style="font-size:11px;color:var(--text-mute)">女性减脂: 1200-1500 · 维持: 1800-2000</span>
+      </div>
+    </div>
+
+    <!-- 三餐记录 -->
+    <div class="section-title">🍽️ 今日三餐 <button class="btn btn-sm" onclick="openDietAdd()" style="margin-left:8px">+ 添加食物</button></div>
+    ${MEAL_TYPES.map(type=>`
+      <div class="card" style="margin-bottom:10px;border-left:3px solid ${MEAL_COLORS[type]}">
+        <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+          <span>${MEAL_ICONS[type]} ${type}</span>
+          <span style="font-size:12px;color:var(--text-mute)">${mealCals[type]||0} 千卡</span>
+        </div>
+        ${(todayMeals[type]||[]).length?`
+          <div class="list">${(todayMeals[type]||[]).map((f,i)=>`
+            <div class="list-item" style="gap:8px">
+              <span style="font-size:18px">${f.emoji||'🍽️'}</span>
+              <div class="title" style="flex:1">
+                <div style="font-weight:500">${esc(f.name)}${f.amount?` <span style="font-size:11px;color:var(--text-mute)">×${f.amount}g</span>`:''}</div>
+                ${f.note?`<div style="font-size:11px;color:var(--text-mute)">${esc(f.note)}</div>`:''}
+              </div>
+              <span style="font-weight:600;font-size:13px;color:var(--pink-500);white-space:nowrap">${f.cal||0}千卡</span>
+              ${f.link?`<a href="${esc(f.link)}" target="_blank" style="font-size:12px;color:var(--text-mute);text-decoration:none" title="查看图片/视频">📷</a>`:''}
+              <button class="icon-btn danger" onclick="deleteDietFood('${type}',${i})" title="删除">🗑</button>
+            </div>
+          `).join('')}</div>
+        `:`<div class="empty" style="font-size:12px">暂无记录 · <span style="color:var(--pink-400);cursor:pointer" onclick="openDietAdd('${type}')">添加食物</span></div>`}
+      </div>
+    `).join('')}
+
+    <!-- 营养素分析 -->
+    ${totalCal>0?`
+    <div class="card" style="margin-top:14px">
+      <div class="card-title">🔬 营养素估算</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        ${[
+          {label:'蛋白质',val:totalProtein,unit:'g',pct:Math.round(totalProtein*4/(totalCal||1)*100),rec:'20-30%',color:'#ef4444'},
+          {label:'碳水',val:totalCarb,unit:'g',pct:Math.round(totalCarb*4/(totalCal||1)*100),rec:'40-50%',color:'#f59e0b'},
+          {label:'脂肪',val:totalFat,unit:'g',pct:Math.round(totalFat*9/(totalCal||1)*100),rec:'25-30%',color:'#8b5cf6'}
+        ].map(n=>`
+          <div style="flex:1;min-width:80px;text-align:center;padding:10px;border-radius:10px;background:${n.color}10">
+            <div style="font-size:18px;font-weight:700;color:${n.color}">${n.val}<span style="font-size:12px;opacity:.7">${n.unit}</span></div>
+            <div style="font-size:12px;color:var(--text-soft)">${n.label} · ${n.pct}%</div>
+            <div style="font-size:10px;color:var(--text-mute)">推荐 ${n.rec}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>`:''}
+
+    <!-- 减脂知识卡片 -->
+    <div class="card card-soft" style="margin-top:14px">
+      <div class="card-title">📖 减脂饮食指南</div>
+      <div style="font-size:12px;color:var(--text-soft);line-height:1.8">
+        <p><strong>🔥 热量缺口：</strong>每日摄入 < 消耗 300-500千卡，每周可减 0.5kg。女性减脂建议 1200-1500千卡/天。</p>
+        <p style="margin-top:4px"><strong>🥩 营养配比：</strong>碳水40% · 蛋白质30% · 脂肪30%（4:3:3黄金比例）</p>
+        <p style="margin-top:4px"><strong>🥗 三餐分配：</strong>早餐300-400千卡 · 午餐500-600千卡 · 晚餐300-400千卡 · 加餐100-200千卡</p>
+        <p style="margin-top:4px"><strong>💧 饮水：</strong>每日2000-2500ml，饭前300ml增加饱腹感</p>
+        <p style="margin-top:4px"><strong>⏰ 进食节奏：</strong>3餐+2加餐，间隔不超过4小时，避免暴食</p>
+        <p style="margin-top:4px"><strong>🏋️ 运动配合：</strong>每周3-5次，有氧+力量结合。欧阳春晓跟练每次约消耗200-300千卡</p>
+        <p style="margin-top:4px"><strong>🚫 避雷：</strong>奶茶(~300千卡)、炸鸡(~500千卡/块)、蛋糕(~350千卡/块)</p>
+        <p style="margin-top:8px;font-size:11px;color:var(--text-mute)">📌 数据来源：《中国食物成分表》、中国营养学会膳食指南</p>
+      </div>
+    </div>
+
+    <!-- ========== 健身打卡（整合） ========== -->
+    <div style="margin-top:18px;border-top:2px dashed var(--border);padding-top:18px">
+      <div class="section-title">🏋️ 健身打卡 · 本月记录</div>
+      ${(()=>{
+        const ftToday = state.data.fitness[td];
+        const ftDim=daysInMonth(tm);
+        const [ftY,ftM]=tm.split('-').map(Number);
+        const ftNow=new Date();
+        const ftTodayIdx=ftNow.getMonth()+1===ftM&&ftNow.getFullYear()===ftY?ftNow.getDate():0;
+        const ftDoneDays=[];
+        for(let d=1;d<=ftDim;d++){
+          const kk=tm+'-'+String(d).padStart(2,'0');
+          if(state.data.fitness[kk])ftDoneDays.push(d);
+        }
+        const ftDoneCount=ftDoneDays.length;
+        let ftStreak=0;
+        for(let d=ftTodayIdx||ftDim;d>=1;d--){
+          const kk=tm+'-'+String(d).padStart(2,'0');
+          if(state.data.fitness[kk])ftStreak++;else break;
+        }
+        // 生成日历格子HTML（用字符串拼接避免模板嵌套问题）
+        var calHtml='';
+        for(var d=1;d<=ftDim;d++){
+          var kk=tm+'-'+String(d).padStart(2,'0');
+          var done=state.data.fitness[kk];
+          var isToday=d===ftTodayIdx;
+          var dow=['日','一','二','三','四','五','六'][new Date(ftY,ftM-1,d).getDay()];
+          calHtml+='<div class="fitness-day '+(done?'done':'')+'" onclick="fitnessToggle(\x27'+kk+'\x27);setTimeout(function(){renderHealth()},200)" title="'+kk+(done?' ✓':'')+'">';
+          calHtml+='<span style=\"font-size:10px;color:'+(isToday?'var(--pink-500)':'var(--text-mute)')+';font-weight:'+(isToday?'700':'400')+'\">'+dow+'</span>';
+          calHtml+='<span class=\"d\">'+d+'</span></div>';
+        }
+        return '<div class=\"grid grid-4\" style=\"margin-bottom:14px\">'+
+          '<div class=\"stat\"><div class=\"stat-label\">本月健身</div><div class=\"stat-value\">'+ftDoneCount+'/'+ftDim+'<span style=\"font-size:14px;opacity:.5\">天</span></div></div>'+
+          '<div class=\"stat\"><div class=\"stat-label\">连续打卡</div><div class=\"stat-value\">'+ftStreak+'<span style=\"font-size:14px;opacity:.5\">天</span></div></div>'+
+          '<div class=\"stat\"><div class=\"stat-label\">今日状态</div><div class=\"stat-value\">'+(ftToday?'💪 已完成':'😴 未打卡')+'</div></div>'+
+          '<div class=\"stat\"><div class=\"stat-label\">今日消耗</div><div class=\"stat-value\" style=\"color:#ef4444\">'+(ftToday?'~300':'-')+'<span style=\"font-size:14px;opacity:.5\">千卡</span></div></div>'+
+          '</div>'+
+          '<div class=\"toolbar\">'+
+          '<button class=\"btn btn-sm\" onclick=\"fitnessToggleToday();setTimeout(function(){renderHealth()},200)\">'+(ftToday?'取消今日打卡':'🏃 今日打卡')+'</button>'+
+          '<span style=\"font-size:12px;color:var(--text-mute)\">'+tm+' 打卡日历</span>'+
+          '<div style=\"flex:1\"></div>'+
+          '<button class=\"btn btn-ghost btn-sm\" onclick=\"exportFitness()\">导出</button>'+
+          '</div>'+
+          '<div class=\"card\"><div style=\"display:flex;flex-wrap:wrap;gap:4px\">'+calHtml+'</div></div>';
+      })()}
+
+      <!-- 欧阳春晓跟练视频 -->
+      <div class="card" style="margin-top:14px">
+        <div class="card-title">🎀 欧阳春晓 · 跟练视频</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:8px">
+          ${[
+            {title:'直角肩 + 少女背',desc:'15分钟完整版，改善圆肩驼背',url:'https://www.douyin.com/video/7515024972190174522',color:'#f472b6',icon:'💪'},
+            {title:'沙漏腰 3.0',desc:'30分钟进阶版，复合动作更高效',url:'https://www.douyin.com/search/%E6%AC%A7%E9%98%B3%E6%98%A5%E6%99%93%E6%B2%99%E6%BC%8F%E8%85%B03.0%E8%AF%A6%E7%BB%86%E8%B7%9F%E7%BB%83',color:'#fb7185',icon:'⏳'},
+            {title:'天鹅臂 + 天鹅颈',desc:'10分钟跟练，练出优雅线条',url:'https://www.douyin.com/search/%E6%AC%A7%E9%98%B3%E6%98%A5%E6%99%93%E5%A4%A9%E9%B9%85%E9%A2%88%E8%B7%9F%E7%BB%8310%E5%88%86%E9%92%9F%E5%AE%8C%E6%95%B4%E7%89%88',color:'#e879f9',icon:'🦢'}
+          ].map(v=>`
+            <a href="${v.url}" target="_blank" style="text-decoration:none;display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;background:linear-gradient(135deg,${v.color}10,${v.color}05);border:1px solid ${v.color}30;transition:all .2s"
+               onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 16px ${v.color}20'"
+               onmouseout="this.style.transform='';this.style.boxShadow=''">
+              <div style="width:44px;height:44px;border-radius:12px;background:${v.color}20;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${v.icon}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:600;font-size:14px;color:var(--text)">${v.title}</div>
+                <div style="font-size:12px;color:var(--text-mute);margin-top:2px">${v.desc}</div>
+              </div>
+              <div style="width:32px;height:32px;border-radius:50%;background:${v.color};display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;flex-shrink:0">▶</div>
+            </a>
+          `).join('')}
+        </div>
+        <div style="font-size:11px;color:var(--text-mute);margin-top:10px;text-align:center">
+          💡 点击卡片跳转抖音观看完整跟练视频。每次跟练约消耗200-300千卡，配合饮食打卡效果翻倍！
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// 添加食物弹窗
+function openDietAdd(preType){
+  const types = preType ? [preType] : MEAL_TYPES;
+  const foodNames = Object.keys(FOOD_DB);
+  const quickFoods = ['鸡蛋','鸡胸肉','西兰花','米饭','红薯','牛奶','苹果','燕麦片','牛肉(瘦)','虾仁'];
+
+  openModal(`
+    <div class="modal-title">🍽️ 添加食物</div>
+    <div class="form-group">
+      <div class="form-label">餐别</div>
+      <select id="diet-type" style="width:100%">
+        ${MEAL_TYPES.map(t=>`<option value="${t}" ${t===preType?'selected':''}>${MEAL_ICONS[t]} ${t}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group">
+      <div class="form-label">食物名称</div>
+      <input id="diet-name" placeholder="输入食物名（如：鸡胸肉、米饭）" list="food-list" autofocus>
+      <datalist id="food-list">${foodNames.map(n=>`<option value="${n}">${n} (${FOOD_DB[n]}千卡/100g)</option>`).join('')}</datalist>
+    </div>
+    <div class="form-row">
+      <input id="diet-amount" type="number" placeholder="份量(克)" value="100" style="flex:1">
+      <input id="diet-cal" type="number" placeholder="热量(千卡)" style="flex:1">
+    </div>
+    <div style="font-size:11px;color:var(--text-mute);margin-bottom:8px">
+      💡 输入食物名后热量自动填充（按100g计算），可手动修改
+    </div>
+    <div class="form-group">
+      <div class="form-label">图片/视频链接（可选）</div>
+      <input id="diet-link" placeholder="粘贴图片或视频链接">
+    </div>
+    <div class="form-group">
+      <div class="form-label">备注（可选）</div>
+      <input id="diet-note" placeholder="如：少油、水煮">
+    </div>
+    <!-- 快捷食物 -->
+    <div style="margin-bottom:10px">
+      <div class="form-label" style="margin-bottom:4px">⚡ 快捷添加</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">
+        ${quickFoods.map(f=>`<span class="pill" onclick="quickDietPick('${f}')">${f} (${FOOD_DB[f]}千卡)</span>`).join('')}
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+      <button class="btn" onclick="saveDietFood()">保存</button>
+    </div>
+  `);
+
+  // 自动计算热量
+  setTimeout(()=>{
+    const nameEl = document.getElementById('diet-name');
+    const calEl = document.getElementById('diet-cal');
+    const amountEl = document.getElementById('diet-amount');
+    if(nameEl && calEl){
+      nameEl.addEventListener('input',()=>{
+        const name = nameEl.value.trim();
+        if(FOOD_DB[name] && !calEl.dataset.manual){
+          const amount = parseFloat(amountEl.value)||100;
+          calEl.value = Math.round(FOOD_DB[name]*amount/100);
+        }
+      });
+      calEl.addEventListener('input',()=>{calEl.dataset.manual='1'});
+    }
+  },100);
+}
+
+function quickDietPick(foodName){
+  const nameEl = document.getElementById('diet-name');
+  const calEl = document.getElementById('diet-cal');
+  if(nameEl)nameEl.value = foodName;
+  if(calEl){calEl.value = FOOD_DB[foodName]||0;calEl.dataset.manual='1'}
+}
+
+function saveDietFood(){
+  const type = $('#diet-type').value;
+  const name = $('#diet-name').value.trim();
+  const amount = parseFloat($('#diet-amount').value)||100;
+  const cal = parseFloat($('#diet-cal').value)||0;
+  const link = $('#diet-link').value.trim();
+  const note = $('#diet-note').value.trim();
+  if(!name){toast('请输入食物名称');return}
+
+  // 估算营养素
+  const protein = Math.round(cal*0.3/4);  // 30%蛋白质
+  const carb = Math.round(cal*0.45/4);     // 45%碳水
+  const fat = Math.round(cal*0.25/9);      // 25%脂肪
+
+  const td = today();
+  if(!state.data.diet.meals)state.data.diet.meals={};
+  if(!state.data.diet.meals[td])state.data.diet.meals[td]={早餐:[],午餐:[],晚餐:[],加餐:[]};
+  state.data.diet.meals[td][type].push({
+    name,amount,cal,link,note,protein,carb,fat,
+    emoji: name.includes('鸡')?'🍗':name.includes('饭')||name.includes('面')?'🍚':name.includes('菜')||name.includes('西兰')?'🥬':name.includes('果')?'🍎':name.includes('奶')||name.includes('豆')?'🥛':name.includes('蛋')?'🥚':'🍽️',
+    time: new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})
+  });
+
+  saveState();closeModal();renderHealth();toast(`已添加：${name} ${cal}千卡`);
+}
+
+function deleteDietFood(type,idx){
+  const td = today();
+  const meals = state.data.diet.meals&&state.data.diet.meals[td];
+  if(!meals||!meals[type])return;
+  meals[type].splice(idx,1);
+  saveState();renderHealth();toast('已删除');
+}
+
+function saveDietTarget(){
+  const val = parseInt($('#diet-target').value)||1500;
+  state.data.diet.targetCal = Math.max(800,Math.min(3000,val));
+  saveState();renderHealth();toast(`目标已设为 ${state.data.diet.targetCal} 千卡/天`);
+}
 
 
 /* ─── 2. 英语打卡（联动不背单词） ─── */
