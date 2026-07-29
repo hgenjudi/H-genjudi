@@ -608,6 +608,7 @@ textarea.script{min-height:60px;font-family:"SF Mono","Fira Code",monospace;font
 const STORE_KEY = 'xiaohe_hq_v2';
 const DEFAULT_MODULES = [
   {id:'health',    name:'健康管理',   icon:'💪', enabled:true, group:'📋 生活'},
+  {id:'reminder',  name:'健康提醒',   icon:'🔔', enabled:true, group:'📋 生活'},
   {id:'english',   name:'英语打卡',   icon:'📚', enabled:true, group:'🌱 成长'},
   {id:'videoedit', name:'视频剪辑',   icon:'🎬', enabled:true, group:'📋 生活'},
   {id:'finance',   name:'记账本',     icon:'💳', enabled:true, group:'📋 生活'},
@@ -756,6 +757,7 @@ function loadState(){
       if(!parsed.data.reviews)parsed.data.reviews=[];
       if(!parsed.data.hotspots)parsed.data.hotspots=[];
       if(!parsed.data.football)parsed.data.football=[];
+      if(!parsed.data.reminder)parsed.data.reminder={};
       if(!parsed._veTab)parsed._veTab='analysis';
       return parsed;
     }
@@ -893,6 +895,7 @@ function switchModule(id){
 
 const subtitles={
   health:'饮食运动一手掌握 🥗💪',
+  reminder:'定时提醒，健康生活 🔔',
   english:'每天背单词，积少成多',
   finance:'精打细算每一笔',
   countdown:'不错过任何重要时刻',
@@ -925,7 +928,7 @@ function renderAllModules(){
     div.innerHTML=`<div id="content-${m.id}"></div>`;
     c.appendChild(div);
   });
-  renderHealth();renderEnglish();renderFinance();renderCountdown();
+  renderHealth();renderReminder();renderEnglish();renderFinance();renderCountdown();
   renderReading();renderFootball();
   renderIdeas();renderScript();renderReview();renderHotspot();renderVideoEdit();renderSettings();
   switchModule(currentModule);
@@ -1298,7 +1301,243 @@ function saveDietTarget(){
 }
 
 
-/* ─── 2. 英语打卡（联动不背单词） ─── */
+/* ─── 1.5 健康提醒（喝水/看绿植/站立） ─── */
+// 提醒计划：工作日 8:00-12:00 上午段 + 14:30-18:30 下午段
+// 喝水：上午3次 下午3次
+// 看绿植：上午5次 下午5次
+// 站立：上午10次 下午10次
+const REMINDER_TASKS = [
+  {key:'water',  name:'喝水',     icon:'💧', color:'#3b82f6', morning:3, afternoon:3, interval:40},
+  {key:'green',  name:'看绿色植物', icon:'🌿', color:'#10b981', morning:5, afternoon:5, interval:25},
+  {key:'stand',  name:'站立活动',   icon:'🧍', color:'#f59e0b', morning:10,afternoon:10,interval:12},
+];
+const MORNING_START = 8*60;   // 8:00 in minutes
+const MORNING_END   = 12*60;  // 12:00
+const AFTERNOON_START = 14*60+30; // 14:30
+const AFTERNOON_END   = 18*60+30; // 18:30
+
+// 初始化提醒数据
+if(!state.data.reminder){state.data.reminder={};saveState()}
+
+function getReminderToday(){
+  const td = today();
+  if(!state.data.reminder[td]){
+    state.data.reminder[td] = {};
+    REMINDER_TASKS.forEach(t=>{
+      state.data.reminder[td][t.key] = {morning:[],afternoon:[]};
+    });
+    saveState();
+  }
+  return state.data.reminder[td];
+}
+
+function isWorkday(){
+  const d = new Date().getDay();
+  return d>=1 && d<=5; // 周一到周五
+}
+
+function getReminderSchedule(task){
+  // 生成上午和下午的时间点
+  const morningTimes = [];
+  const afternoonTimes = [];
+  const mRange = MORNING_END - MORNING_START;
+  const aRange = AFTERNOON_END - AFTERNOON_START;
+  for(let i=0;i<task.morning;i++){
+    const min = MORNING_START + Math.round(mRange*(i+1)/(task.morning+1));
+    morningTimes.push(min);
+  }
+  for(let i=0;i<task.afternoon;i++){
+    const min = AFTERNOON_START + Math.round(aRange*(i+1)/(task.afternoon+1));
+    afternoonTimes.push(min);
+  }
+  return {morningTimes, afternoonTimes};
+}
+
+function minToTime(min){
+  return String(Math.floor(min/60)).padStart(2,'0')+':'+String(min%60).padStart(2,'0');
+}
+
+function getCurrentSlot(){
+  const now = new Date();
+  const min = now.getHours()*60 + now.getMinutes();
+  if(min>=MORNING_START && min<MORNING_END) return 'morning';
+  if(min>=AFTERNOON_START && min<AFTERNOON_END) return 'afternoon';
+  return null;
+}
+
+function renderReminder(){
+  const c=$('#content-reminder');
+  if(!c)return;
+  const td=today();
+  const data=getReminderToday();
+  const workday=isWorkday();
+  const nowMin=new Date().getHours()*60+new Date().getMinutes();
+  const slot=getCurrentSlot();
+
+  c.innerHTML=`
+    <div class="card card-soft" style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-size:16px;font-weight:700">${workday?'💼 工作日提醒进行中':'🎉 今天非工作日'}</div>
+          <div style="font-size:12px;color:var(--text-mute);margin-top:2px">
+            ${workday?(slot==='morning'?'☀️ 上午时段 (8:00-12:00)':slot==='afternoon'?'🌤️ 下午时段 (14:30-18:30)':'⏰ 当前不在提醒时段'):'提醒仅在工作日激活'}
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:20px;font-weight:700;color:var(--pink-500)">${minToTime(nowMin)}</div>
+          <div style="font-size:11px;color:var(--text-mute)">当前时间</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-3" style="margin-bottom:14px">
+      ${REMINDER_TASKS.map(t=>{
+        const d=data[t.key]||{morning:[],afternoon:[]};
+        const mDone=d.morning.length;
+        const aDone=d.afternoon.length;
+        const total=t.morning+t.afternoon;
+        const done=mDone+aDone;
+        const pct=Math.round(done/total*100);
+        return `<div class="stat" style="border-left:3px solid ${t.color}">
+          <div class="stat-label">${t.icon} ${t.name}</div>
+          <div class="stat-value" style="color:${t.color}">${done}<span style="font-size:14px;opacity:.5">/${total}</span></div>
+          <div class="stat-sub">上午 ${mDone}/${t.morning} · 下午 ${aDone}/${t.afternoon}</div>
+          <div class="progress" style="height:6px;margin-top:6px"><div class="progress-bar" style="width:${pct}%;background:${t.color}"></div></div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    ${REMINDER_TASKS.map(task=>{
+      const d=data[task.key]||{morning:[],afternoon:[]};
+      const sched=getReminderSchedule(task);
+      return `
+      <div class="card" style="margin-bottom:10px;border-left:3px solid ${task.color}">
+        <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+          <span>${task.icon} ${task.name}</span>
+          <span style="font-size:11px;color:var(--text-mute)">每${task.interval}分钟一次</span>
+        </div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap">
+          <!-- 上午 -->
+          <div style="flex:1;min-width:200px">
+            <div style="font-size:12px;font-weight:600;color:#f59e0b;margin-bottom:6px">☀️ 上午 (8:00-12:00) · ${task.morning}次</div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px">
+              ${sched.morningTimes.map((min,i)=>{
+                const done=d.morning.includes(i);
+                const isCurrent = slot==='morning' && nowMin>=min-5 && nowMin<=min+5;
+                return `<div onclick="toggleReminder('${task.key}','morning',${i})"
+                  style="padding:6px 10px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;
+                  background:${done?t.color+'20':'#f4f4f5'};color:${done?'#fff':isCurrent?t.color:'var(--text-soft)'};
+                  ${done?'background:'+t.color+';':''}
+                  border:1px solid ${done?t.color:isCurrent?t.color:'transparent'}">
+                  ${minToTime(min)} ${done?'✓':''}
+                </div>`;
+              }).join('')}
+            </div>
+          </div>
+          <!-- 下午 -->
+          <div style="flex:1;min-width:200px">
+            <div style="font-size:12px;font-weight:600;color:#8b5cf6;margin-bottom:6px">🌤️ 下午 (14:30-18:30) · ${task.afternoon}次</div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px">
+              ${sched.afternoonTimes.map((min,i)=>{
+                const done=d.afternoon.includes(i);
+                const isCurrent = slot==='afternoon' && nowMin>=min-5 && nowMin<=min+5;
+                return `<div onclick="toggleReminder('${task.key}','afternoon',${i})"
+                  style="padding:6px 10px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;
+                  background:${done?t.color+'20':'#f4f4f5'};color:${done?'#fff':isCurrent?t.color:'var(--text-soft)'};
+                  ${done?'background:'+t.color+';':''}
+                  border:1px solid ${done?t.color:isCurrent?t.color:'transparent'}">
+                  ${minToTime(min)} ${done?'✓':''}
+                </div>`;
+              }).join('')}
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}
+
+    <!-- 浏览器通知设置 -->
+    <div class="card card-soft" style="margin-top:14px">
+      <div class="card-title">📱 智能提醒</div>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <button class="btn btn-sm" onclick="enableReminderNotify()">🔔 开启浏览器通知</button>
+        <span style="font-size:12px;color:var(--text-mute)" id="notify-status">点击上方按钮开启桌面通知弹窗</span>
+      </div>
+      <div style="font-size:11px;color:var(--text-mute);margin-top:8px;line-height:1.6">
+        💡 提醒规则：工作日 8:00-12:00 上午时段 + 14:30-18:30 下午时段<br>
+        💧 喝水：上下午各3次（约40分钟一次）<br>
+        🌿 看绿植：上下午各5次（约25分钟一次）<br>
+        🧍 站立：上下午各10次（约12分钟一次）<br>
+        📌 点击时间标签可手动标记完成，开启通知后到点自动弹窗提醒
+      </div>
+    </div>
+  `;
+
+  // 启动定时检查
+  scheduleReminderCheck();
+}
+
+function toggleReminder(key,slot,idx){
+  const data=getReminderToday();
+  const task=data[key]||(data[key]={morning:[],afternoon:[]});
+  const arr=task[slot];
+  const i=arr.indexOf(idx);
+  if(i>=0)arr.splice(i,1);
+  else arr.push(idx);
+  saveState();
+  renderReminder();
+}
+
+let _reminderNotifyEnabled=false;
+function enableReminderNotify(){
+  if(!('Notification' in window)){
+    toast('浏览器不支持通知');
+    return;
+  }
+  Notification.requestPermission().then(p=>{
+    if(p==='granted'){
+      _reminderNotifyEnabled=true;
+      const el=document.getElementById('notify-status');
+      if(el)el.textContent='✅ 已开启，到点会弹窗提醒';
+      toast('通知已开启');
+      new Notification('健康提醒已开启 💪',{body:'工作时段会按时提醒你喝水、看绿植、站立活动'});
+    } else {
+      toast('通知被拒绝，请在浏览器设置中允许');
+    }
+  });
+}
+
+// 定时检查是否该提醒
+let _reminderCheckTimer=null;
+const _lastNotify={};
+function scheduleReminderCheck(){
+  if(_reminderCheckTimer)clearInterval(_reminderCheckTimer);
+  _reminderCheckTimer=setInterval(()=>{
+    if(!isWorkday()||!_reminderNotifyEnabled)return;
+    const nowMin=new Date().getHours()*60+new Date().getMinutes();
+    const slot=getCurrentSlot();
+    if(!slot)return;
+    const data=getReminderToday();
+    REMINDER_TASKS.forEach(task=>{
+      const sched=getReminderSchedule(task);
+      const times=slot==='morning'?sched.morningTimes:sched.afternoonTimes;
+      const done=(data[task.key]&&data[task.key][slot])||[];
+      times.forEach((min,i)=>{
+        if(nowMin===min && !done.includes(i)){
+          const notifyKey=task.key+'-'+slot+'-'+i+'-'+today();
+          if(!_lastNotify[notifyKey]){
+            _lastNotify[notifyKey]=true;
+            new Notification(task.icon+' '+task.name+'提醒',{
+              body:'该'+task.name+'了！保持健康好习惯 💪',
+              tag:notifyKey
+            });
+          }
+        }
+      });
+    });
+  },30000); // 每30秒检查一次
+}
+
+
 // 数据存储格式: state.data.english = { "2026-07-28": { newWords: 20, reviewWords: 50, duration: 30, note: "" }, ... }
 // 兼容旧 todo 数据迁移
 if(!state.data.english || Array.isArray(state.data.english)){
